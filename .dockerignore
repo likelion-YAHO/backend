@@ -1,0 +1,14 @@
+.gradle
+build
+.idea
+.git
+.gitignore
+HELP.md
+*.md
+compose.yaml
+docker-compose*.yml
+nginx
+.env
+.vscode
+out
+bin
