@@ -18,6 +18,7 @@ services:
       retries: 20
 
   spring:
+    image: ghcr.io/likelion-yaho/backend:latest
     build: .
     container_name: spring-container
     environment:
