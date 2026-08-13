@@ -52,13 +52,13 @@ public class OpenAiProductDesignRecommender implements ProductDesignRecommender 
       - 시안은 정확히 %d개
       - 입력 recyclableParts만 재료로 사용 (없는 패턴/로고 창작 금지)
       - 시안 제품 크기는 sizeHint + 원본 카테고리/크기를 "상한"으로 지킬 것
-        · sizeHint 범위를 넘는 과대 시안 금지
-        · "상태 하 = 무조건 키링" 같은 고정 규칙은 없음
+        - sizeHint 범위를 넘는 과대 시안 금지
+        - "상태 하 = 무조건 키링" 같은 고정 규칙은 없음
       - 크기 다양성 (매우 중요):
-        · 가능한 범위 안에서 시안들의 크기를 최대한 다양하게 배치할 것
-        · 예: 소형(키링/참) ~ 중형(파우치/미니백) 등이 허용되면 한쪽에 몰지 말고 스펙트럼을 채울 것
-        · 범위가 좁으면(소형만 가능) 그 안에서도 형태/용도를 다르게
-        · 각 description에 대략 크기 느낌(소형/중형/준중형 등)을 한 단어로 포함
+        - 가능한 범위 안에서 시안들의 크기를 최대한 다양하게 배치할 것
+        - 예: 소형(키링/참) ~ 중형(파우치/미니백) 등이 허용되면 한쪽에 몰지 말고 스펙트럼을 채울 것
+        - 범위가 좁으면(소형만 가능) 그 안에서도 형태/용도를 다르게
+        - 각 description에 대략 크기 느낌(소형/중형/준중형 등)을 한 단어로 포함
       - 각 시안 필드:
         - name: 짧은 한글 이름
         - description: 재활용 방식 + 크기 느낌 1~2문장
@@ -239,7 +239,7 @@ public class OpenAiProductDesignRecommender implements ProductDesignRecommender 
     String sizeHint =
         StringUtils.hasText(product.getSizeHint())
             ? product.getSizeHint()
-            : "원본 카테고리·크기와 상태("
+            : "원본 카테고리/크기와 상태("
                 + product.getAiCondition().getLabel()
                 + ")에 맞는 시안 규모";
 

@@ -29,7 +29,7 @@ import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
-@Tag(name = "Product", description = "제품 등록 / AI 상태·시안 분석 API")
+@Tag(name = "Product", description = "제품 등록 / AI 상태/시안 분석 API")
 @RestController
 @RequestMapping("/api/products")
 @RequiredArgsConstructor
@@ -81,7 +81,7 @@ public class ProductController {
   @Operation(
       summary = "디자인 시안 추천",
       description =
-          "사용자 디자인 가이드 프롬프트를 저장하고, 제품 사진·카테고리·상태를 바탕으로 AI 리폼 시안을 추천합니다. 재호출 시 기존 시안은 교체됩니다.",
+          "사용자 디자인 가이드 프롬프트를 저장하고, 제품 사진/카테고리/상태를 바탕으로 AI 리폼 시안을 추천합니다. 재호출 시 기존 시안은 교체됩니다.",
       security = @SecurityRequirement(name = "bearerAuth"))
   @PostMapping("/{productId}/design-analysis")
   public ResponseEntity<BaseResponse<DesignAnalysisResponse>> analyzeDesign(
@@ -96,7 +96,7 @@ public class ProductController {
   @Operation(
       summary = "커스텀 미리보기",
       description =
-          "시안·포인트·메탈·추가상품 조합으로 미리보기 이미지를 생성합니다. "
+          "시안/포인트/메탈/추가상품 조합으로 미리보기 이미지를 생성합니다. "
               + "같은 조합은 DB 캐시를 재사용하며 cacheHit=true로 표시됩니다. "
               + "스와치 변경마다 호출 X, 미리보기 버튼에서만 호출 O.",
       security = @SecurityRequirement(name = "bearerAuth"))

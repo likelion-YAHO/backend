@@ -18,7 +18,7 @@ public class DesignOptionResponse {
   @Schema(description = "시안 이름", example = "키링형")
   private String name;
 
-  @Schema(description = "시안 설명", example = "본체를 키링·참 세트로 리폼")
+  @Schema(description = "시안 설명", example = "본체를 키링/참 세트로 리폼")
   private String description;
 
   @Schema(description = "미리보기 이미지 URL")

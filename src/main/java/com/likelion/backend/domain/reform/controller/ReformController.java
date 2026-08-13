@@ -47,7 +47,7 @@ public class ReformController {
 
   @Operation(
       summary = "리폼 상세 조회",
-      description = "reformId로 견적·옵션 조회 (예약 생성 시 reformId 사용)",
+      description = "reformId로 견적/옵션 조회 (예약 생성 시 reformId 사용)",
       security = @SecurityRequirement(name = "bearerAuth"))
   @GetMapping("/reforms/{reformId}")
   public ResponseEntity<BaseResponse<ReformResponse>> getReform(

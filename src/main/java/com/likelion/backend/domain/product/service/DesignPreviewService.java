@@ -279,7 +279,7 @@ public class DesignPreviewService {
     StringBuilder sb = new StringBuilder();
     sb.append(
         """
-        COMPOSITE IMAGE EDIT — do NOT redesign the product.
+        COMPOSITE IMAGE EDIT - do NOT redesign the product.
         Image 1 is the APPROVED design mockup. Keep Image 1 almost pixel-identical: same shape, pattern, monogram, layout, camera angle.
         Only ADD small accessories / minor accent color on hardware or trims. Do not replace the main product with a new design.
 
@@ -316,7 +316,7 @@ public class DesignPreviewService {
       sb.append(
           """
           Image 2 is the EXACT charm/keyring product photo. Attach/place it as an accessory beside or on the main product.
-          Preserve Image 2 appearance faithfully — same shape, color, pattern. Do NOT restyle, redraw, or invent a different charm.
+          Preserve Image 2 appearance faithfully - same shape, color, pattern. Do NOT restyle, redraw, or invent a different charm.
           """);
     } else if (charm != null) {
       sb.append("Add a small accessory named: ").append(charm.getName()).append(". ");
@@ -329,7 +329,7 @@ public class DesignPreviewService {
           .append(
               """
                is the EXACT scarf product photo. Drape/tie it on or next to the main product.
-              Preserve Image %d appearance faithfully — same print and colors. Do NOT redesign the scarf pattern.
+              Preserve Image %d appearance faithfully - same print and colors. Do NOT redesign the scarf pattern.
               """
                   .formatted(scarfIndex));
     } else if (scarf != null) {

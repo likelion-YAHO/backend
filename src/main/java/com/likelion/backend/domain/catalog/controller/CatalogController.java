@@ -38,7 +38,7 @@ public class CatalogController {
 
   @Operation(
       summary = "추가상품 목록",
-      description = "레더 참·키링, 스카프 등. category=KEYRING|SCARF 로 필터 가능")
+      description = "레더 참/키링, 스카프 등. category=KEYRING|SCARF 로 필터 가능")
   @GetMapping("/add-on-products")
   public ResponseEntity<BaseResponse<AddOnProductListResponse>> getAddOnProducts(
       @Parameter(description = "KEYRING 또는 SCARF (미입력 시 전체)")

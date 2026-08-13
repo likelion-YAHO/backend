@@ -192,7 +192,7 @@ public class ReformService {
     List<PriceLineResponse> lines = new ArrayList<>();
     lines.add(
         PriceLineResponse.builder()
-            .name("수선·리폼비")
+            .name("수선/리폼비")
             .quantity(1)
             .unitPrice(reform.getRepairFee())
             .lineTotal(reform.getRepairFee())

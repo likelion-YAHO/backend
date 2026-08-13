@@ -42,23 +42,23 @@ public class OpenAiProductConditionAnalyzer implements ProductConditionAnalyzer 
       그리고 추천 가능한 시안 제품의 대략적 크기를 판정합니다.
 
       판정 기준 (상태):
-      - 상: 형태 완전, 큰 훼손·오염 거의 없음
-      - 중: 사용감·약한 스크래치·부분 오염, 주요 패널 일부 재사용 가능
-      - 하: 심한 찢김·오염·형태 붕괴, 사용 가능한 조각이 제한적
+      - 상: 형태 완전, 큰 훼손/오염 거의 없음
+      - 중: 사용감/약한 스크래치/부분 오염, 주요 패널 일부 재사용 가능
+      - 하: 심한 찢김/오염/형태 붕괴, 사용 가능한 조각이 제한적
 
       upcyclable:
       - 재사용 가능한 소재가 조금이라도 있으면 true
-      - 완전히 소실·오염으로 재료로 쓸 수 없으면 false
+      - 완전히 소실/오염으로 재료로 쓸 수 없으면 false
 
-      sizeHint (중요 — KEYRING 고정이 아님):
+      sizeHint (중요 - KEYRING 고정이 아님):
       - 원본 제품 크기/카테고리 + 상태를 함께 고려해 "가능한 시안 크기 범위"를 문장으로 적으세요
       - 단일 크기가 아니라 가능하면 하한~상한 스펙트럼을 쓰세요
         예: "소형 키링부터 중형 파우치까지 가능"
-        예: "원본 미니백·상태 상 → 소형 위주, 최대 미니 토트"
-        예: "대형 백팩·상태 하 → 남은 패널로 소형~준중형 소품"
+        예: "원본 미니백/상태 상 -> 소형 위주, 최대 미니 토트"
+        예: "대형 백팩/상태 하 -> 남은 패널로 소형~준중형 소품"
       - "상태 하 = 무조건 키링" 고정 규칙 금지
 
-      recyclableParts: 사진에서 실제로 재사용 가능해 보이는 부위·소재를 구체적으로
+      recyclableParts: 사진에서 실제로 재사용 가능해 보이는 부위/소재를 구체적으로
 
       반드시 아래 JSON만 출력 (마크다운 금지):
       {
@@ -129,7 +129,7 @@ public class OpenAiProductConditionAnalyzer implements ProductConditionAnalyzer 
                 + " ("
                 + category.name()
                 + ")\n"
-                + "상태·upcyclable·recyclableParts·sizeHint를 판정하고 JSON만 반환하세요.\n"
+                + "상태/upcyclable/recyclableParts/sizeHint를 판정하고 JSON만 반환하세요.\n"
                 + "sizeHint는 손상도만이 아니라 이 카테고리/원본 크기를 반영하세요."));
 
     for (MultipartFile image : images) {
