@@ -13,6 +13,10 @@ spring:
     properties:
       hibernate:
         dialect: org.hibernate.dialect.MySQLDialect
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 50MB
 
 server:
   port: 8080
@@ -27,6 +31,24 @@ app:
     access-token-validity: ${JWT_ACCESS_VALIDITY:3600000}
     # refresh token 유효 기간(14일)
     refresh-token-validity: ${JWT_REFRESH_VALIDITY:1209600000}
+  storage:
+    local:
+      base-dir: ${APP_STORAGE_LOCAL_BASE_DIR:./uploads}
+      base-url: ${APP_STORAGE_LOCAL_BASE_URL:http://localhost:8080/uploads}
+  ai:
+    # true면 OpenAI Vision 사용, false면 Mock
+    enabled: ${APP_AI_ENABLED:true}
+    base-url: ${OPENAI_BASE_URL:https://api.openai.com/v1}
+    api-key: ${OPENAI_API_KEY:}
+    model: ${OPENAI_VISION_MODEL:gpt-4.1-mini}
+    detail: ${OPENAI_VISION_DETAIL:low}
+    timeout-ms: ${OPENAI_TIMEOUT_MS:60000}
+    # 시안 이미지 생성 (Images edits API)
+    design-image-enabled: ${OPENAI_DESIGN_IMAGE_ENABLED:true}
+    image-model: ${OPENAI_IMAGE_MODEL:gpt-image-1-mini}
+    image-quality: ${OPENAI_IMAGE_QUALITY:low}
+    image-size: ${OPENAI_IMAGE_SIZE:1024x1024}
+    image-timeout-ms: ${OPENAI_IMAGE_TIMEOUT_MS:120000}
 
 springdoc:
   swagger-ui:

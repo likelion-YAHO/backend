@@ -39,6 +39,12 @@ public class SecurityConfig {
                 "/api/auth/login",
                 "/api/auth/refresh",
                 "/health",
+                "/uploads/**",
+                // static 추가상품 이미지 (resources/static/*.png)
+                "/*.png",
+                "/*.jpg",
+                "/*.jpeg",
+                "/*.webp",
                 "/swagger-ui/**",
                 "/swagger-ui.html",
                 "/v3/api-docs/**",
