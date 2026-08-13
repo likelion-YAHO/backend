@@ -32,7 +32,21 @@ public class Product extends BaseTimeEntity {
   @Column(name = "is_upcyclable", nullable = false)
   private boolean upcyclable;
 
+  /** 원본 제품에서 재활용 가능한 부위/소재 설명 (시안 AI 입력용) */
+  @Column(name = "recyclable_parts", length = 1000)
+  private String recyclableParts;
+
+  /**
+   * 상태 + 원본 제품 종류/크기 기준 권장 시안 규모 힌트
+   */
+  @Column(name = "size_hint", length = 500)
+  private String sizeHint;
+
   /** AI 생성 시 유저가 추가 입력한 텍스트 */
   @Column(name = "user_prompt", length = 255)
   private String userPrompt;
+
+  public void updateUserPrompt(String userPrompt) {
+    this.userPrompt = userPrompt;
+  }
 }
