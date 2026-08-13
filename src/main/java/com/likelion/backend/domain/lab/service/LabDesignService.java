@@ -31,19 +31,12 @@ public class LabDesignService {
     private final UserRepository userRepository; // 테스트를 위해 임시 유저 조회용
     private final LabDesignLikeRepository labDesignLikeRepository;
 
-    // [더미 버전] AI 디자인 시안 생성 로직
     public AiDesignResponseDto generateAiDesignDummy(AiDesignRequestDto request) {
-        log.info("AI 디자인 생성 요청 수신 - 제품: {}, 프롬프트: {}", request.getBaseProduct(), request.getPrompt());
+        // TODO: 향후 OpenAI 연동 로직이 들어갈 자리입니다.
+        // 현재는 테스트를 위해 단일 더미 이미지 URL을 반환합니다.
+        String dummyImageUrl = "https://via.placeholder.com/500x500.png?text=MCM+Dummy+Bag";
 
-        // 프론트엔드가 화면을 바로 그릴 수 있도록 더미 이미지 URL 3개를 내려줍니다.
-        // (나중에 이 부분을 싹 지우고 실제 OpenAI 호출 코드로 갈아끼울 예정입니다!)
-        List<String> dummyImages = List.of(
-                "https://via.placeholder.com/1024x1024.png?text=MCM+AI+Design+1",
-                "https://via.placeholder.com/1024x1024.png?text=MCM+AI+Design+2",
-                "https://via.placeholder.com/1024x1024.png?text=MCM+AI+Design+3"
-        );
-
-        return new AiDesignResponseDto(dummyImages);
+        return new AiDesignResponseDto(dummyImageUrl);
     }
 
     @Transactional

@@ -5,6 +5,7 @@ import com.likelion.backend.domain.lab.service.LabDesignService;
 import com.likelion.backend.global.common.BaseResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -24,7 +25,7 @@ public class LabDesignController {
 
     @Operation(summary = "AI 디자인 시안 생성 (더미)", description = "프롬프트를 바탕으로 AI 이미지를 생성하여 반환합니다. (현재 프론트 테스트용 더미 데이터 반환)")
     @PostMapping("/generate")
-    public ResponseEntity<BaseResponse<AiDesignResponseDto>> generateAiDesign(@RequestBody AiDesignRequestDto request) {
+    public ResponseEntity<BaseResponse<AiDesignResponseDto>> generateAiDesign(@Valid @RequestBody AiDesignRequestDto request) {
         AiDesignResponseDto response = labDesignService.generateAiDesignDummy(request);
 
         return ResponseEntity.ok(

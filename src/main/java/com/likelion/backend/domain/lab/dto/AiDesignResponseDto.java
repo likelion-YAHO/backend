@@ -10,6 +10,6 @@ import java.util.List;
 @AllArgsConstructor
 public class AiDesignResponseDto {
 
-    @Schema(description = "AI가 생성한 시안 이미지 URL 리스트 (최대 3개)")
-    private List<String> generatedImages;
+    @Schema(description = "생성된 AI 디자인 시안 이미지 URL", example = "https://dummy-image-url.com/mcm-bag.jpg")
+    private String imageUrl;
 }
