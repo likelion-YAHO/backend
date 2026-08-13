@@ -26,4 +26,17 @@ public enum ProductCategory {
         .findFirst()
         .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 카테고리 값입니다: " + label));
   }
+
+  /** enum name(BACKPACK) 또는 한글 label(백팩) 모두 허용 */
+  public static ProductCategory fromValue(String value) {
+    if (value == null || value.isBlank()) {
+      throw new IllegalArgumentException("카테고리 값이 비어 있습니다.");
+    }
+    String trimmed = value.trim();
+    return Arrays.stream(values())
+        .filter(category -> category.name().equalsIgnoreCase(trimmed)
+            || category.label.equals(trimmed))
+        .findFirst()
+        .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 카테고리 값입니다: " + value));
+  }
 }
