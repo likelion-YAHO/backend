@@ -1,0 +1,89 @@
+package com.likelion.backend.domain.lab.entity;
+
+import com.likelion.backend.domain.user.entity.User; // 유저 엔티티 경로 확인 필요!
+import com.likelion.backend.global.common.BaseTimeEntity;
+import jakarta.persistence.*;
+import lombok.AccessLevel;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+
+@Entity
+@Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+public class LabDesign extends BaseTimeEntity {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    // 누가 만든 디자인인지 (다대일 관계)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
+
+    // 어떤 미션에 출품한 건지 (다대일 관계)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "mission_id", nullable = false)
+    private LabMission mission;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 50)
+    private BaseProduct baseProduct; // 커스텀 베이스 가방
+
+    @Column(nullable = false, length = 100)
+    private String designName; // 유저가 지은 디자인명
+
+    @Column(nullable = false, columnDefinition = "TEXT")
+    private String concept; // 디자인 콘셉트 설명
+
+    @Column(columnDefinition = "TEXT")
+    private String aiPrompt; // AI 시안 생성 시 사용했던 프롬프트
+
+    @Column(nullable = false)
+    private String usedMaterials; // 사용한 부자재/소재
+
+    @Column(nullable = false)
+    private String imageUrl; // 최종 렌더링(생성)된 가상 이미지 URL
+
+    @Column(nullable = false)
+    private Integer likesCount = 0; // 좋아요 수 (반정규화)
+
+    @Column(nullable = false)
+    private Boolean isOfficialSelection = false; // 본사 선정 여부
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private ProductionStatus productionStatus = ProductionStatus.VIRTUAL; // 실물 제작 상태
+
+    private Integer price; // 선정 후 실물 제작 시 한정판 판매 가격 (NULL 허용)
+
+    @Builder
+    public LabDesign(User user, LabMission mission, BaseProduct baseProduct,
+                     String designName, String concept, String aiPrompt,
+                     String usedMaterials, String imageUrl) {
+        this.user = user;
+        this.mission = mission;
+        this.baseProduct = baseProduct;
+        this.designName = designName;
+        this.concept = concept;
+        this.aiPrompt = aiPrompt;
+        this.usedMaterials = usedMaterials;
+        this.imageUrl = imageUrl;
+        this.likesCount = 0;
+        this.isOfficialSelection = false;
+        this.productionStatus = ProductionStatus.VIRTUAL;
+    }
+
+    // 좋아요 증가
+    public void incrementLikeCount() {
+        this.likesCount++;
+    }
+
+    // 좋아요 감소 (0 이하로 떨어지지 않게 방어)
+    public void decrementLikeCount() {
+        if (this.likesCount > 0) {
+            this.likesCount--;
+        }
+    }
+}

@@ -40,7 +40,11 @@ public enum GlobalErrorCode implements BaseErrorCode {
   REVIEW_ALREADY_EXISTS("V002", "이미 리뷰가 작성된 예약입니다.", HttpStatus.CONFLICT),
 
   // 문의 도메인 에러코드
-  INQUIRY_NOT_FOUND("I001", "존재하지 않는 문의입니다.", HttpStatus.NOT_FOUND);
+  INQUIRY_NOT_FOUND("I001", "존재하지 않는 문의입니다.", HttpStatus.NOT_FOUND),
+
+  // 랩(Lab) 도메인 에러코드
+  LAB_MISSION_NOT_FOUND("L001", "현재 진행 중인 랩 미션이 없습니다.", HttpStatus.NOT_FOUND),
+  LAB_DESIGN_NOT_FOUND("L002", "존재하지 않는 랩 디자인 출품작입니다.", HttpStatus.NOT_FOUND);
 
   private final String code;
   private final String message;
