@@ -106,7 +106,6 @@ public class ReservationService {
         reservation.updateStatus(ReservationStatus.CANCELLED);
     }
 
-    // 6. 예약 변경 (방문일시, 매장 수정)
     @Transactional
     public ReservationDetailResponseDto updateReservation(Long reservationId, ReservationCreateRequest request, Long userId) {
         Reservation reservation = reservationRepository.findById(reservationId)
@@ -119,10 +118,27 @@ public class ReservationService {
         Store store = storeRepository.findById(request.getStoreId())
                 .orElseThrow(() -> new CustomException(GlobalErrorCode.STORE_NOT_FOUND));
 
-        // 상세 정보 업데이트
-        reservation.updateDetails(request.getVisitDate(), store);
+        Reform reform = reformRepository.findById(request.getReformId())
+                .orElseThrow(() -> new CustomException(GlobalErrorCode.PRODUCT_NOT_FOUND));
+
+        reservation.updateDetails(request.getVisitDate(), store, reform);
 
         return ReservationDetailResponseDto.from(reservation);
+    }
+
+    @Transactional
+    public void restoreReservation(Long reservationId, Long userId) {
+        Reservation reservation = reservationRepository.findById(reservationId)
+                .orElseThrow(() -> new CustomException(GlobalErrorCode.RESERVATION_NOT_FOUND));
+
+        if (!reservation.getUser().getId().equals(userId)) {
+            throw new CustomException(GlobalErrorCode.INVALID_INPUT_VALUE);
+        }
+
+        // 취소된 상태가 아니라면 복원할 필요 없음
+        if (reservation.getStatus() == ReservationStatus.CANCELLED) {
+            reservation.updateStatus(ReservationStatus.RECEIVED); // 다시 접수 상태로
+        }
     }
 
     // UPC-7K4D-92LM 형식의 고유 주문 번호 생성기

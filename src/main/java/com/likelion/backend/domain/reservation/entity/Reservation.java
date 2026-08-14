@@ -63,9 +63,10 @@ public class Reservation extends BaseTimeEntity {
   }
 
   // 2. 예약 상세 정보(방문일시, 매장) 수정 메서드
-  public void updateDetails(LocalDateTime visitDate, Store store) {
+  public void updateDetails(LocalDateTime visitDate, Store store, Reform reform) {
     this.visitDate = visitDate;
     this.store = store;
+    this.reform = reform;
   }
 
   private LocalDateTime receivedAt;             // 접수 완료 시간
