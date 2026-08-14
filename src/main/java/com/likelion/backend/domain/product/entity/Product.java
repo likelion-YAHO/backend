@@ -46,7 +46,29 @@ public class Product extends BaseTimeEntity {
   @Column(name = "user_prompt", length = 255)
   private String userPrompt;
 
+  /** product 단위 AI 추천 키링/참 (add_on_products.id) */
+  @Column(name = "recommended_charm_id")
+  private Long recommendedCharmId;
+
+  @Column(name = "recommended_charm_name", length = 100)
+  private String recommendedCharmName;
+
+  /** product 단위 AI 추천 스카프 (add_on_products.id) */
+  @Column(name = "recommended_scarf_id")
+  private Long recommendedScarfId;
+
+  @Column(name = "recommended_scarf_name", length = 100)
+  private String recommendedScarfName;
+
   public void updateUserPrompt(String userPrompt) {
     this.userPrompt = userPrompt;
+  }
+
+  public void updateAddonRecommendations(
+      Long charmId, String charmName, Long scarfId, String scarfName) {
+    this.recommendedCharmId = charmId;
+    this.recommendedCharmName = charmName;
+    this.recommendedScarfId = scarfId;
+    this.recommendedScarfName = scarfName;
   }
 }

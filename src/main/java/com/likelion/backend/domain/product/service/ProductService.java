@@ -115,6 +115,7 @@ public class ProductService {
 
   /**
    * 디자인 가이드 프롬프트를 저장하고 AI 시안 추천을 생성한다.
+   * AI 응답에 product 단위 키링 1 + 스카프 1 추천이 포함된다.
    * 재호출 시 기존 시안은 교체된다.
    */
   @Transactional
@@ -138,10 +139,16 @@ public class ProductService {
       throw new CustomException(GlobalErrorCode.PRODUCT_IMAGE_REQUIRED);
     }
 
-    List<DesignRecommendation> recommendations =
+    DesignRecommendResult result =
         productDesignRecommender.recommend(product, images, prompt);
+    List<DesignRecommendation> recommendations = result.getDesigns();
 
     product.updateUserPrompt(prompt);
+    product.updateAddonRecommendations(
+        result.getRecommendedCharmId(),
+        result.getRecommendedCharmName(),
+        result.getRecommendedScarfId(),
+        result.getRecommendedScarfName());
     deleteExistingDesignOptions(product.getId(), images);
 
     String fallbackImageUrl = images.get(0).getImageUrl();
@@ -152,6 +159,7 @@ public class ProductService {
           StringUtils.hasText(recommendation.getImageUrl())
               ? recommendation.getImageUrl()
               : fallbackImageUrl;
+
       DesignOption option =
           DesignOption.builder()
               .product(product)
