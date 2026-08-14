@@ -5,6 +5,7 @@ services:
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-0000}
       MYSQL_DATABASE: ${MYSQL_DATABASE:-hackathon}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
     ports:
       - "3306:3306"
     volumes:
