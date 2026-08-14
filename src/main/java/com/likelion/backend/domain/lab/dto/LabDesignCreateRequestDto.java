@@ -29,4 +29,16 @@ public class LabDesignCreateRequestDto {
 
     @Schema(description = "최종 생성된 이미지 URL", example = "https://...")
     private String imageUrl;
+
+    @Schema(description = "포인트 컬러 코드 (선택)", example = "PINK")
+    private String pointColor;
+
+    @Schema(description = "메탈 컬러 코드 (선택)", example = "GOLD")
+    private String metalColor;
+
+    @Schema(description = "추가 레더 참/키링 ID (선택)", example = "3")
+    private Long charmOptionId;
+
+    @Schema(description = "추가 스카프 ID (선택)", example = "5")
+    private Long scarfOptionId;
 }

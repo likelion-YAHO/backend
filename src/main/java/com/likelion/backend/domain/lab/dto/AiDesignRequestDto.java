@@ -18,4 +18,7 @@ public class AiDesignRequestDto {
     @Size(min = 10, message = "텍스트를 10자 이상 입력해주세요.")
     @Schema(description = "사용자가 입력한 AI 디자인 가이드(프롬프트)", example = "포켓의 가죽을 비세토스 스웨이드 꼬냑으로 변경하고 메탈 컬러를 은색으로 바꿔주세요.")
     private String prompt;
+
+    @Schema(description = "현재 AI 생성 시도 횟수 (1~3)", example = "1")
+    private Integer currentTryCount;
 }
