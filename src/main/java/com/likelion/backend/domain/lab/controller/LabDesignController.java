@@ -3,6 +3,7 @@ package com.likelion.backend.domain.lab.controller;
 import com.likelion.backend.domain.lab.dto.*;
 import com.likelion.backend.domain.lab.service.LabDesignService;
 import com.likelion.backend.global.common.BaseResponse;
+import com.likelion.backend.global.security.SecurityUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -10,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -33,12 +35,14 @@ public class LabDesignController {
         );
     }
 
-    @Operation(summary = "디자인 출품", description = "AI 생성을 거쳐 완성된 디자인을 콘테스트에 제출합니다.")
+    @Operation(
+            summary = "디자인 출품",
+            description = "AI 생성을 거쳐 완성된 디자인을 콘테스트에 제출합니다.",
+            security = @SecurityRequirement(name = "bearerAuth"))
     @PostMapping
     public ResponseEntity<BaseResponse<LabDesignResponseDto>> createLabDesign(
-            @Parameter(description = "테스트용 유저 ID", example = "1") @RequestParam(defaultValue = "1") Long userId,
             @RequestBody LabDesignCreateRequestDto request) {
-
+        Long userId = SecurityUtils.getCurrentUserId();
         LabDesignResponseDto response = labDesignService.createLabDesign(userId, request);
 
         return ResponseEntity.status(HttpStatus.CREATED)
@@ -70,12 +74,14 @@ public class LabDesignController {
         );
     }
 
-    @Operation(summary = "디자인 좋아요 토글", description = "갤러리 작품의 좋아요를 켜거나 끕니다.")
+    @Operation(
+            summary = "디자인 좋아요 토글",
+            description = "갤러리 작품의 좋아요를 켜거나 끕니다.",
+            security = @SecurityRequirement(name = "bearerAuth"))
     @PostMapping("/{designId}/likes")
     public ResponseEntity<BaseResponse<LabDesignLikeResponseDto>> toggleLike(
-            @Parameter(description = "디자인 식별자", example = "1") @PathVariable Long designId,
-            @Parameter(description = "테스트용 유저 ID", example = "1") @RequestParam(defaultValue = "1") Long userId) {
-
+            @Parameter(description = "디자인 식별자", example = "1") @PathVariable Long designId) {
+        Long userId = SecurityUtils.getCurrentUserId();
         LabDesignLikeResponseDto response = labDesignService.toggleLike(userId, designId);
 
         return ResponseEntity.ok(
