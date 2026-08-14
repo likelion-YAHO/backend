@@ -10,6 +10,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -37,12 +38,18 @@ public class ReservationController {
         );
     }
 
-    @Operation(summary = "[사용자용] 예약 상세 조회", description = "예약 ID를 통해 상세 정보(타임라인, 바코드 주문번호 등)를 조회합니다.")
+    @Operation(
+            summary = "[사용자용] 예약 상세 조회",
+            description = "본인 예약의 상세 정보(타임라인, 바코드 주문번호 등)를 조회합니다.",
+            security = @SecurityRequirement(name = "bearerAuth"))
     @GetMapping("/{reservationId}")
     public ResponseEntity<BaseResponse<ReservationDetailResponseDto>> getReservationDetail(
             @Parameter(description = "예약 식별자", example = "1") @PathVariable Long reservationId) {
+        Long userId = SecurityUtils.getCurrentUserId();
         return ResponseEntity.ok(
-                BaseResponse.success("예약 상세 조회에 성공했습니다.", reservationService.getReservationDetail(reservationId))
+                BaseResponse.success(
+                        "예약 상세 조회에 성공했습니다.",
+                        reservationService.getReservationDetail(reservationId, userId))
         );
     }
 
@@ -61,7 +68,7 @@ public class ReservationController {
             security = @SecurityRequirement(name = "bearerAuth"))
     @PostMapping
     public ResponseEntity<BaseResponse<ReservationDetailResponseDto>> createReservation(
-            @RequestBody ReservationCreateRequest request) {
+            @Valid @RequestBody ReservationCreateRequest request) {
         Long userId = SecurityUtils.getCurrentUserId();
         ReservationDetailResponseDto response = reservationService.createReservation(userId, request);
 
@@ -91,7 +98,7 @@ public class ReservationController {
     @PutMapping("/{reservationId}")
     public ResponseEntity<BaseResponse<ReservationDetailResponseDto>> updateReservation(
             @Parameter(description = "예약 식별자", example = "1") @PathVariable Long reservationId,
-            @RequestBody ReservationCreateRequest request) {
+            @Valid @RequestBody ReservationCreateRequest request) {
         Long userId = SecurityUtils.getCurrentUserId();
         ReservationDetailResponseDto response = reservationService.updateReservation(reservationId, request, userId);
 

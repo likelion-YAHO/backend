@@ -48,6 +48,8 @@ public enum GlobalErrorCode implements BaseErrorCode {
   RESERVATION_ALREADY_CANCELLED("R003", "이미 취소된 예약입니다.", HttpStatus.CONFLICT),
   REFORM_NOT_FOUND("R004", "존재하지 않는 리폼(선택 완료) 내역입니다.", HttpStatus.NOT_FOUND),
   REFORM_ACCESS_DENIED("R005", "해당 리폼에 접근할 수 없습니다.", HttpStatus.FORBIDDEN),
+  RESERVATION_ALREADY_EXISTS("R006", "이미 예약된 리폼입니다.", HttpStatus.CONFLICT),
+  RESERVATION_ACCESS_DENIED("R007", "해당 예약에 접근할 수 없습니다.", HttpStatus.FORBIDDEN),
 
   // 리뷰 도메인 에러코드
   REVIEW_NOT_FOUND("V001", "존재하지 않는 리뷰입니다.", HttpStatus.NOT_FOUND),
