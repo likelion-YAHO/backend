@@ -45,4 +45,24 @@ public class User extends BaseTimeEntity {
   @Builder.Default
   @Column(name = "alarm_enabled", nullable = false)
   private boolean alarmEnabled = true;
+
+  public void updateNickname(String nickname) {
+    this.nickname = nickname;
+  }
+
+  public void updateEmail(String email) {
+    this.email = email;
+  }
+
+  public void updatePhone(String phone) {
+    this.phone = phone;
+  }
+
+  public void updateProfileImage(String profileImage) {
+    this.profileImage = profileImage;
+  }
+
+  public void updateAlarmEnabled(boolean alarmEnabled) {
+    this.alarmEnabled = alarmEnabled;
+  }
 }
