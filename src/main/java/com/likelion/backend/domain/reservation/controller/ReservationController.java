@@ -88,4 +88,17 @@ public class ReservationController {
                 BaseResponse.success("예약이 성공적으로 변경되었습니다.", response)
         );
     }
+
+    @Operation(summary = "예약 복원", description = "취소된 예약을 다시 접수 상태로 복원합니다.")
+    @PostMapping("/{reservationId}/restore")
+    public ResponseEntity<BaseResponse<Void>> restoreReservation(
+            @Parameter(description = "예약 식별자", example = "1") @PathVariable Long reservationId,
+            @Parameter(description = "테스트용 유저 ID", example = "1") @RequestParam(defaultValue = "1") Long userId) {
+
+        reservationService.restoreReservation(reservationId, userId);
+
+        return ResponseEntity.ok(
+                BaseResponse.success("예약이 성공적으로 복원되었습니다.", null)
+        );
+    }
 }
