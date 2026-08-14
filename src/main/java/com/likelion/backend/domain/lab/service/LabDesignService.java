@@ -1,123 +1,98 @@
 package com.likelion.backend.domain.lab.service;
 
-import com.likelion.backend.domain.lab.dto.*;
-import com.likelion.backend.domain.lab.entity.ProductionStatus;
-import com.likelion.backend.global.config.AiProperties;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.MediaType;
-import org.springframework.stereotype.Service;
+import com.likelion.backend.domain.lab.dto.AiDesignRequestDto;
+import com.likelion.backend.domain.lab.dto.AiDesignResponseDto;
+import com.likelion.backend.domain.lab.dto.LabDesignCreateRequestDto;
+import com.likelion.backend.domain.lab.dto.LabDesignDetailResponseDto;
+import com.likelion.backend.domain.lab.dto.LabDesignLikeResponseDto;
+import com.likelion.backend.domain.lab.dto.LabDesignListResponseDto;
+import com.likelion.backend.domain.lab.dto.LabDesignResponseDto;
+import com.likelion.backend.domain.lab.dto.LabEditionResponseDto;
+import com.likelion.backend.domain.lab.entity.BaseProduct;
+import com.likelion.backend.domain.lab.entity.LabAiGenerationAttempt;
 import com.likelion.backend.domain.lab.entity.LabDesign;
+import com.likelion.backend.domain.lab.entity.LabDesignLike;
 import com.likelion.backend.domain.lab.entity.LabMission;
+import com.likelion.backend.domain.lab.entity.ProductionStatus;
+import com.likelion.backend.domain.lab.repository.LabAiGenerationAttemptRepository;
+import com.likelion.backend.domain.lab.repository.LabDesignLikeRepository;
 import com.likelion.backend.domain.lab.repository.LabDesignRepository;
 import com.likelion.backend.domain.lab.repository.LabMissionRepository;
 import com.likelion.backend.domain.user.entity.User;
 import com.likelion.backend.domain.user.repository.UserRepository;
+import com.likelion.backend.global.config.AiProperties;
 import com.likelion.backend.global.exception.CustomException;
 import com.likelion.backend.global.exception.GlobalErrorCode;
-import org.springframework.transaction.annotation.Transactional;
-import com.likelion.backend.domain.lab.dto.LabDesignLikeResponseDto;
-import com.likelion.backend.domain.lab.entity.LabDesignLike;
-import com.likelion.backend.domain.lab.repository.LabDesignLikeRepository;
-import org.springframework.web.client.RestTemplate;
+import com.likelion.backend.global.storage.FileStorageService;
+import java.time.Duration;
+import java.util.Base64;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.*;
-import java.util.stream.Collectors;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
+import org.springframework.web.client.RestTemplate;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class LabDesignService {
 
+    private static final int MAX_GENERATION_TRIES = 3;
+    private static final String LAB_DESIGN_IMAGE_DIR = "lab-designs";
+
     private final LabDesignRepository labDesignRepository;
     private final LabMissionRepository labMissionRepository;
     private final UserRepository userRepository;
     private final LabDesignLikeRepository labDesignLikeRepository;
-
+    private final LabAiGenerationAttemptRepository labAiGenerationAttemptRepository;
+    private final FileStorageService fileStorageService;
     private final AiProperties aiProperties;
 
-    public AiDesignResponseDto generateAiDesign(AiDesignRequestDto request) {
+    @Transactional
+    public AiDesignResponseDto generateAiDesign(Long userId, AiDesignRequestDto request) {
+        if (request.getBaseProduct() == null) {
+            throw new CustomException(GlobalErrorCode.INVALID_INPUT_VALUE);
+        }
+        if (!StringUtils.hasText(aiProperties.getApiKey())) {
+            throw new CustomException(GlobalErrorCode.AI_NOT_CONFIGURED);
+        }
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new CustomException(GlobalErrorCode.USER_NOT_FOUND));
+        LabMission mission = labMissionRepository.findFirstByIsActiveTrueOrderByCreatedAtDesc()
+                .orElseThrow(() -> new CustomException(GlobalErrorCode.LAB_MISSION_NOT_FOUND));
+
+        LabAiGenerationAttempt attempt = labAiGenerationAttemptRepository
+                .findByUser_IdAndMission_IdAndBaseProduct(
+                        userId, mission.getId(), request.getBaseProduct())
+                .orElseGet(() ->
+                        labAiGenerationAttemptRepository.save(
+                                LabAiGenerationAttempt.builder()
+                                        .user(user)
+                                        .mission(mission)
+                                        .baseProduct(request.getBaseProduct())
+                                        .build()));
 
         // 1. 시도 횟수 방어 로직 (3회 초과 시 에러 반환)
-        if (request.getCurrentTryCount() != null && request.getCurrentTryCount() > 3) {
+        if (attempt.getTryCount() >= MAX_GENERATION_TRIES) {
             throw new CustomException(GlobalErrorCode.AI_GENERATION_LIMIT_EXCEEDED);
         }
 
         // 2. 진짜 AI 호출 로직
-        String baseProductName = request.getBaseProduct().getProductName();
-        String refinedPrompt = "A professional studio product photograph of a complete, entire MCM " + baseProductName +
-                ", viewed from a distance so that the entire bag including its bottom, sides, and straps are fully visible with generous negative space around it. " +
-                "Base model: " + baseProductName + ". " +
-                "User customization request: " + request.getPrompt() + ". " +
-                "Centered composition, clean white studio background, high resolution, photorealistic leather texture.";
-
-        RestTemplate restTemplate = new RestTemplate();
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        headers.setBearerAuth(aiProperties.getApiKey());
-
-        Map<String, Object> requestBody = new HashMap<>();
-        requestBody.put("model", aiProperties.getImageModel());
-        requestBody.put("prompt", refinedPrompt);
-        requestBody.put("n", 1);
-        requestBody.put("size", aiProperties.getImageSize());
-
-        HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestBody, headers);
-
-        try {
-            String requestUrl = aiProperties.getBaseUrl() + "/images/generations";
-
-            ResponseEntity<Map> response = restTemplate.postForEntity(
-                    requestUrl,
-                    entity,
-                    Map.class
-            );
-
-            Map<String, Object> responseBody = response.getBody();
-            log.info("OpenAI 응답 전문 수신 완료");
-
-            if (responseBody != null && responseBody.containsKey("data")) {
-                List<Map<String, Object>> data = (List<Map<String, Object>>) responseBody.get("data");
-                if (data != null && !data.isEmpty()) {
-                    Map<String, Object> item = data.get(0);
-
-                    if (item.containsKey("url")) {
-                        String imageUrl = (String) item.get("url");
-                        return new AiDesignResponseDto(imageUrl);
-                    } else if (item.containsKey("b64_json")) {
-                        String b64 = (String) item.get("b64_json");
-
-                        // 로컬 파일 저장 로직
-                        byte[] imageBytes = Base64.getDecoder().decode(b64);
-                        Path uploadDir = Paths.get("./uploads/ai-design");
-                        if (!Files.exists(uploadDir)) {
-                            Files.createDirectories(uploadDir);
-                        }
-
-                        String fileName = UUID.randomUUID().toString() + ".png";
-                        Path filePath = uploadDir.resolve(fileName);
-                        Files.write(filePath, imageBytes);
-
-                        log.info("이미지 파일 저장 완료 - path: {}", filePath.toAbsolutePath());
-
-                        String fileUrl = "http://localhost:8080/uploads/ai-design/" + fileName;
-                        return new AiDesignResponseDto(fileUrl);
-                    }
-                }
-            }
-
-            throw new CustomException(GlobalErrorCode.AI_GENERATION_FAILED);
-
-        } catch (Exception e) {
-            log.error("AI 이미지 생성 실패 상세 에러: ", e);
-            throw new CustomException(GlobalErrorCode.AI_GENERATION_FAILED);
-        }
+        String imageUrl = generateAndStoreImage(request.getBaseProduct(), request.getPrompt());
+        attempt.incrementTryCount();
+        return new AiDesignResponseDto(imageUrl, attempt.getTryCount());
     }
 
     @Transactional
@@ -144,7 +119,86 @@ public class LabDesignService {
                 .build();
 
         LabDesign savedDesign = labDesignRepository.save(labDesign);
+        if (request.getBaseProduct() != null) {
+            labAiGenerationAttemptRepository.deleteByUser_IdAndMission_IdAndBaseProduct(
+                    userId, mission.getId(), request.getBaseProduct());
+        }
         return new LabDesignResponseDto(savedDesign);
+    }
+
+    private String generateAndStoreImage(BaseProduct baseProduct, String prompt) {
+        String baseProductName = baseProduct.getProductName();
+        String refinedPrompt =
+                "A professional studio product photograph of a complete, entire MCM "
+                        + baseProductName
+                        + ", viewed from a distance so that the entire bag including its bottom, sides, and straps are fully visible with generous negative space around it. "
+                        + "Base model: "
+                        + baseProductName
+                        + ". "
+                        + "User customization request: "
+                        + prompt
+                        + ". "
+                        + "Centered composition, clean white studio background, high resolution, photorealistic leather texture.";
+
+        RestTemplate restTemplate = buildRestTemplate();
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.setBearerAuth(aiProperties.getApiKey());
+
+        Map<String, Object> requestBody = new HashMap<>();
+        requestBody.put("model", aiProperties.getImageModel());
+        requestBody.put("prompt", refinedPrompt);
+        requestBody.put("n", 1);
+        requestBody.put("size", aiProperties.getImageSize());
+        requestBody.put("quality", aiProperties.getImageQuality());
+
+        try {
+            String baseUrl = aiProperties.getBaseUrl();
+            if (baseUrl != null && baseUrl.endsWith("/")) {
+                baseUrl = baseUrl.substring(0, baseUrl.length() - 1);
+            }
+            ResponseEntity<Map> response =
+                    restTemplate.postForEntity(
+                            baseUrl + "/images/generations",
+                            new HttpEntity<>(requestBody, headers),
+                            Map.class);
+
+            Map<String, Object> responseBody = response.getBody();
+            if (responseBody == null || !responseBody.containsKey("data")) {
+                throw new CustomException(GlobalErrorCode.AI_GENERATION_FAILED);
+            }
+            List<Map<String, Object>> data = (List<Map<String, Object>>) responseBody.get("data");
+            if (data == null || data.isEmpty()) {
+                throw new CustomException(GlobalErrorCode.AI_GENERATION_FAILED);
+            }
+            Map<String, Object> item = data.get(0);
+            byte[] imageBytes;
+            if (item.get("b64_json") instanceof String b64 && StringUtils.hasText(b64)) {
+                imageBytes = Base64.getDecoder().decode(b64);
+            } else if (item.get("url") instanceof String remoteUrl && StringUtils.hasText(remoteUrl)) {
+                imageBytes = restTemplate.getForObject(remoteUrl, byte[].class);
+                if (imageBytes == null || imageBytes.length == 0) {
+                    throw new CustomException(GlobalErrorCode.AI_GENERATION_FAILED);
+                }
+            } else {
+                throw new CustomException(GlobalErrorCode.AI_GENERATION_FAILED);
+            }
+            // 로컬 파일 저장 로직
+            return fileStorageService.uploadBytes(
+                    imageBytes, LAB_DESIGN_IMAGE_DIR, ".png", "image/png");
+        } catch (CustomException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("AI 이미지 생성 실패 상세 에러: ", e);
+            throw new CustomException(GlobalErrorCode.AI_GENERATION_FAILED);
+        }
+    }
+
+    private RestTemplate buildRestTemplate() {
+        SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
+        requestFactory.setConnectTimeout(Duration.ofSeconds(10));
+        requestFactory.setReadTimeout(Duration.ofMillis(aiProperties.getImageTimeoutMs()));
+        return new RestTemplate(requestFactory);
     }
 
     @Transactional(readOnly = true)

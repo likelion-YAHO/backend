@@ -25,10 +25,15 @@ public class LabDesignController {
 
     private final LabDesignService labDesignService;
 
-    @Operation(summary = "AI 디자인 시안 생성 ", description = "프롬프트를 바탕으로 AI 이미지를 생성하여 반환합니다.")
+    @Operation(
+            summary = "AI 디자인 시안 생성",
+            description = "프롬프트를 바탕으로 AI 이미지를 생성합니다. 로그인 사용자 + 이달의 미션 + 베이스 제품당 최대 3회입니다.",
+            security = @SecurityRequirement(name = "bearerAuth"))
     @PostMapping("/generate")
-    public ResponseEntity<BaseResponse<AiDesignResponseDto>> generateAiDesign(@Valid @RequestBody AiDesignRequestDto request) {
-        AiDesignResponseDto response = labDesignService.generateAiDesign(request);
+    public ResponseEntity<BaseResponse<AiDesignResponseDto>> generateAiDesign(
+            @Valid @RequestBody AiDesignRequestDto request) {
+        Long userId = SecurityUtils.getCurrentUserId();
+        AiDesignResponseDto response = labDesignService.generateAiDesign(userId, request);
 
         return ResponseEntity.ok(
                 BaseResponse.success("AI 디자인 시안 생성에 성공했습니다.", response)
