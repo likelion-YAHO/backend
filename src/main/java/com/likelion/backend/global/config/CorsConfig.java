@@ -19,8 +19,8 @@ public class CorsConfig {
   public CorsConfigurationSource corsConfigurationSource() {
     CorsConfiguration config = new CorsConfiguration();
 
-    // yml에 정의된 프론트엔드 출처만 허용
-    config.setAllowedOrigins(Arrays.asList(allowedOrigins));
+    // yml 출처. https://*.netlify.app 같은 패턴은 Origins가 아니라 OriginPatterns
+    config.setAllowedOriginPatterns(Arrays.asList(allowedOrigins));
 
     // 허용할 HTTP 메서드
     config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));

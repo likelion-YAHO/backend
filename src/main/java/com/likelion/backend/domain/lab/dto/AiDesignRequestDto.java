@@ -3,6 +3,7 @@ package com.likelion.backend.domain.lab.dto;
 import com.likelion.backend.domain.lab.entity.BaseProduct;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -11,6 +12,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class AiDesignRequestDto {
 
+    @NotNull(message = "베이스 제품은 필수입니다.")
     @Schema(description = "커스텀할 베이스 제품", example = "STARK_SIDE_STUDS_BACKPACK")
     private BaseProduct baseProduct;
 
@@ -18,7 +20,4 @@ public class AiDesignRequestDto {
     @Size(min = 10, message = "텍스트를 10자 이상 입력해주세요.")
     @Schema(description = "사용자가 입력한 AI 디자인 가이드(프롬프트)", example = "포켓의 가죽을 비세토스 스웨이드 꼬냑으로 변경하고 메탈 컬러를 은색으로 바꿔주세요.")
     private String prompt;
-
-    @Schema(description = "현재 AI 생성 시도 횟수 (1~3)", example = "1")
-    private Integer currentTryCount;
 }

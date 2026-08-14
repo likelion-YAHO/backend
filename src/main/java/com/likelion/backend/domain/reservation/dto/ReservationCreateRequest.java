@@ -11,8 +11,8 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 public class ReservationCreateRequest {
 
-    @NotNull(message = "제품 ID는 필수입니다.")
-    @Schema(description = "리폼(제품) 식별자", example = "1")
+    @NotNull(message = "리폼 ID는 필수입니다.")
+    @Schema(description = "리폼 식별자", example = "1")
     private Long reformId;
 
     @NotNull(message = "매장 ID는 필수입니다.")
