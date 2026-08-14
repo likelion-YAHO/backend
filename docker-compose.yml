@@ -5,7 +5,6 @@ services:
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-0000}
       MYSQL_DATABASE: ${MYSQL_DATABASE:-hackathon}
-      OPENAI_API_KEY: ${OPENAI_API_KEY}
     ports:
       - "3306:3306"
     volumes:
@@ -28,6 +27,7 @@ services:
       SPRING_DATASOURCE_PASSWORD: ${MYSQL_ROOT_PASSWORD:-0000}
       APP_CORS_ALLOWED_ORIGINS: ${APP_CORS_ALLOWED_ORIGINS:-https://*.netlify.app,http://localhost:3000,http://localhost:5173}
       JWT_SECRET: ${JWT_SECRET}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
     ports:
       - "8080:8080"
     depends_on:
