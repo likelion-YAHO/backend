@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.multipart.support.MissingServletRequestPartException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 @Slf4j
 @RestControllerAdvice
@@ -77,6 +78,17 @@ public class GlobalExceptionHandler {
     return ResponseEntity.badRequest().body(
         BaseResponse.error(GlobalErrorCode.TYPE_MISMATCH.getCode(),
             GlobalErrorCode.TYPE_MISMATCH.getMessage()));
+  }
+
+  // 정적 파일/경로가 없을 때 (uploads 등)
+  @ExceptionHandler(NoResourceFoundException.class)
+  protected ResponseEntity<BaseResponse<?>> handleNoResourceFoundException(
+      NoResourceFoundException ex) {
+    log.warn("NoResourceFoundException 발생: {}", ex.getMessage());
+    return ResponseEntity.status(GlobalErrorCode.RESOURCE_NOT_FOUND.getStatus())
+        .body(BaseResponse.error(
+            GlobalErrorCode.RESOURCE_NOT_FOUND.getCode(),
+            GlobalErrorCode.RESOURCE_NOT_FOUND.getMessage()));
   }
 
   // 예상치 못한 예외
