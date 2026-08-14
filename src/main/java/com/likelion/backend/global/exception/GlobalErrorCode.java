@@ -20,6 +20,7 @@ public enum GlobalErrorCode implements BaseErrorCode {
   INVALID_REFRESH_TOKEN("A003", "유효하지 않거나 만료된 refresh token입니다.", HttpStatus.UNAUTHORIZED),
   EMAIL_ALREADY_EXISTS("A004", "이미 가입된 이메일입니다.", HttpStatus.CONFLICT),
   USER_NOT_FOUND("A005", "존재하지 않는 사용자입니다.", HttpStatus.NOT_FOUND),
+  PROFILE_IMAGE_REQUIRED("U001", "프로필 이미지는 필수입니다.", HttpStatus.BAD_REQUEST),
 
   // 제품 등록 도메인 에러코드
   PRODUCT_NOT_FOUND("P001", "존재하지 않는 제품입니다.", HttpStatus.NOT_FOUND),
