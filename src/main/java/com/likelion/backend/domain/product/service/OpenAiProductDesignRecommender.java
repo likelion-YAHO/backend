@@ -1,5 +1,8 @@
 package com.likelion.backend.domain.product.service;
 
+import com.likelion.backend.domain.catalog.entity.AddOnCategory;
+import com.likelion.backend.domain.catalog.entity.AddOnProduct;
+import com.likelion.backend.domain.catalog.repository.AddOnProductRepository;
 import com.likelion.backend.domain.product.entity.Product;
 import com.likelion.backend.domain.product.entity.ProductImage;
 import com.likelion.backend.global.config.AiProperties;
@@ -13,6 +16,8 @@ import java.util.Base64;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -27,7 +32,9 @@ import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
 /**
- * 원본 제품 재활용 부위 + 상태/크기 힌트 기반 시안 추천 (완전 재생성 금지, IMAGE EDIT 유도)
+ * 원본 제품 재활용 시안 추천
+ * 형태 지정 시 해당 제품만, 미지정 시 sizeHint 안 크기 다양 배치
+ * product 단위 키링 1 + 스카프 1 추천 id 포함
  */
 @Slf4j
 @Component
@@ -54,31 +61,45 @@ public class OpenAiProductDesignRecommender implements ProductDesignRecommender 
       - 시안 제품 크기는 sizeHint + 원본 카테고리/크기를 "상한"으로 지킬 것
         - sizeHint 범위를 넘는 과대 시안 금지
         - "상태 하 = 무조건 키링" 같은 고정 규칙은 없음
-      - 크기 다양성 (매우 중요):
-        - 가능한 범위 안에서 시안들의 크기를 최대한 다양하게 배치할 것
-        - 예: 소형(키링/참) ~ 중형(파우치/미니백) 등이 허용되면 한쪽에 몰지 말고 스펙트럼을 채울 것
-        - 범위가 좁으면(소형만 가능) 그 안에서도 형태/용도를 다르게
-        - 각 description에 대략 크기 느낌(소형/중형/준중형 등)을 한 단어로 포함
+      - 사용자 의도 분기 (가장 중요):
+        [A] 결과 제품 형태를 명시한 경우 (예: 지갑, 파우치, 키링, 카드지갑, 클러치 등)
+          - 모든 시안은 그 제품 형태만 다룬다. 다른 카테고리/크기로 확장 금지
+          - 예: "지갑으로 만들고 싶어" -> 지갑 시안만 (키링·파우치 등 섞지 않음)
+          - 같은 형태 안에서 스타일/구조/포인트·디테일만 다르게 변형
+          - 이 경우에는 크기 스펙트럼을 억지로 채우지 말 것
+        [B] 결과 제품 형태를 명시하지 않은 경우 (기본 = 기존 동작)
+          - sizeHint 가능 범위 안에서 시안 제품 크기를 최대한 다양하게 배치
+          - 예: 소형(키링/참) ~ 중형(파우치/미니백) 등이 허용되면 스펙트럼을 채울 것
+          - 범위가 좁으면(소형만 가능) 그 안에서도 형태/용도를 다르게
+          - 같은 크기로 몰지 말 것
       - 각 시안 필드:
         - name: 짧은 한글 이름
-        - description: 재활용 방식 + 크기 느낌 1~2문장
-        - sizeLabel: 소형|중형|준중형|대형 중 하나 (sizeHint 범위 안)
+        - description: 재활용 방식 + 크기/스타일 느낌 1~2문장
+        - sizeLabel: 소형|중형|준중형|대형 중 하나 (sizeHint 범위 안, 요청 형태에 맞게)
         - reusedParts: recyclableParts 중 이 시안에 쓰는 부위
         - imagePrompt: 영어, "IMAGE EDIT of the provided product photo"로 시작. 완전 신규 생성 금지.
+      - product 단위 추가상품 추천 (시안마다가 아니라 제품 전체 1세트):
+        - recommendedCharmId: 제공된 KEYRING 후보 id 중 정확히 1개
+        - recommendedScarfId: 제공된 SCARF 후보 id 중 정확히 1개
+        - 사용자 가이드/제품 색감/분위기에 가장 잘 맞는 조합을 고를 것
+        - 목록에 없는 id 금지
 
       JSON만:
       {"designs":[
         {"name":"...","description":"...","sizeLabel":"소형","reusedParts":"...","imagePrompt":"IMAGE EDIT ..."}
-      ]}
+      ],
+      "recommendedCharmId":1,
+      "recommendedScarfId":5}
       """
           .formatted(DESIGN_OPTION_COUNT);
 
   private final AiProperties aiProperties;
   private final JsonMapper jsonMapper;
   private final FileStorageService fileStorageService;
+  private final AddOnProductRepository addOnProductRepository;
 
   @Override
-  public List<DesignRecommendation> recommend(
+  public DesignRecommendResult recommend(
       Product product, List<ProductImage> images, String userPrompt) {
     if (!StringUtils.hasText(aiProperties.getApiKey())) {
       throw new CustomException(GlobalErrorCode.AI_NOT_CONFIGURED);
@@ -87,8 +108,16 @@ public class OpenAiProductDesignRecommender implements ProductDesignRecommender 
       throw new CustomException(GlobalErrorCode.PRODUCT_IMAGE_REQUIRED);
     }
 
+    List<AddOnProduct> keyrings =
+        addOnProductRepository.findAllByCategoryAndActiveTrueOrderBySortOrderAscIdAsc(
+            AddOnCategory.KEYRING);
+    List<AddOnProduct> scarves =
+        addOnProductRepository.findAllByCategoryAndActiveTrueOrderBySortOrderAscIdAsc(
+            AddOnCategory.SCARF);
+
     try {
-      Map<String, Object> requestBody = buildChatRequestBody(product, images, userPrompt);
+      Map<String, Object> requestBody =
+          buildChatRequestBody(product, images, userPrompt, keyrings, scarves);
       String rawResponse =
           buildRestClient(aiProperties.getTimeoutMs())
               .post()
@@ -97,12 +126,12 @@ public class OpenAiProductDesignRecommender implements ProductDesignRecommender 
               .retrieve()
               .body(String.class);
 
-      List<DesignRecommendation> textDesigns = parseChatResult(rawResponse);
+      ParsedChatResult parsed = parseChatResult(rawResponse, keyrings, scarves);
       String sourceImageUrl = images.get(0).getImageUrl();
       StoredFile sourceImage = fileStorageService.readByUrl(sourceImageUrl);
 
       List<DesignRecommendation> withImages = new ArrayList<>();
-      for (DesignRecommendation design : textDesigns) {
+      for (DesignRecommendation design : parsed.designs()) {
         String imageUrl = sourceImageUrl;
         if (aiProperties.isDesignImageEnabled()) {
           try {
@@ -119,7 +148,14 @@ public class OpenAiProductDesignRecommender implements ProductDesignRecommender 
                 .imageUrl(imageUrl)
                 .build());
       }
-      return withImages;
+
+      return DesignRecommendResult.builder()
+          .designs(withImages)
+          .recommendedCharmId(parsed.charm() != null ? parsed.charm().getId() : null)
+          .recommendedCharmName(parsed.charm() != null ? parsed.charm().getName() : null)
+          .recommendedScarfId(parsed.scarf() != null ? parsed.scarf().getId() : null)
+          .recommendedScarfName(parsed.scarf() != null ? parsed.scarf().getName() : null)
+          .build();
     } catch (CustomException e) {
       throw e;
     } catch (RestClientException e) {
@@ -231,7 +267,11 @@ public class OpenAiProductDesignRecommender implements ProductDesignRecommender 
   }
 
   private Map<String, Object> buildChatRequestBody(
-      Product product, List<ProductImage> images, String userPrompt) {
+      Product product,
+      List<ProductImage> images,
+      String userPrompt,
+      List<AddOnProduct> keyrings,
+      List<AddOnProduct> scarves) {
     String recyclable =
         StringUtils.hasText(product.getRecyclableParts())
             ? product.getRecyclableParts()
@@ -242,6 +282,9 @@ public class OpenAiProductDesignRecommender implements ProductDesignRecommender 
             : "원본 카테고리/크기와 상태("
                 + product.getAiCondition().getLabel()
                 + ")에 맞는 시안 규모";
+
+    String keyringCatalog = formatCatalog(keyrings);
+    String scarfCatalog = formatCatalog(scarves);
 
     List<Map<String, Object>> userContent = new ArrayList<>();
     userContent.add(
@@ -257,10 +300,21 @@ public class OpenAiProductDesignRecommender implements ProductDesignRecommender 
             사용자 디자인 가이드: %s
             시안 개수: 정확히 %d개
 
-            recyclableParts만 재료로 쓰고, sizeHint 가능 범위 안에서
-            시안 제품 크기를 최대한 다양하게 배치한 %d개를 JSON으로 반환하세요.
-            (작은 것~허용된 가장 큰 것까지 스펙트럼을 채울 것. 같은 크기로 몰지 말 것)
+            KEYRING 후보 (recommendedCharmId는 이 중 하나):
+            %s
+
+            SCARF 후보 (recommendedScarfId는 이 중 하나):
+            %s
+
+            recyclableParts만 재료로 쓰고, 시안 %d개를 JSON으로 반환하세요.
+            분기:
+            - 사용자가 결과 제품 형태(지갑/파우치/키링 등)를 명시했으면:
+              그 형태 시안만. 다른 종류로 분산 금지. 같은 형태 안 스타일/구조 변형만.
+            - 형태를 명시하지 않았으면 (기본):
+              sizeHint 가능 범위 안에서 시안 제품 크기를 최대한 다양하게 배치.
+              작은 것~허용된 가장 큰 것까지 스펙트럼을 채울 것. 같은 크기로 몰지 말 것.
             상태만으로 키링 고정 금지. imagePrompt는 IMAGE EDIT로 시작.
+            product 전체 추천으로 recommendedCharmId + recommendedScarfId를 각각 후보 id에서 1개씩 고르세요.
             """
                 .formatted(
                     product.getCategory().getLabel(),
@@ -270,6 +324,8 @@ public class OpenAiProductDesignRecommender implements ProductDesignRecommender 
                     sizeHint,
                     userPrompt,
                     DESIGN_OPTION_COUNT,
+                    keyringCatalog,
+                    scarfCatalog,
                     DESIGN_OPTION_COUNT)));
 
     int count = 0;
@@ -308,7 +364,22 @@ public class OpenAiProductDesignRecommender implements ProductDesignRecommender 
     return body;
   }
 
-  private List<DesignRecommendation> parseChatResult(String rawResponse) {
+  private static String formatCatalog(List<AddOnProduct> products) {
+    if (products == null || products.isEmpty()) {
+      return "(없음)";
+    }
+    StringBuilder sb = new StringBuilder();
+    for (AddOnProduct p : products) {
+      if (sb.length() > 0) {
+        sb.append('\n');
+      }
+      sb.append("- id=").append(p.getId()).append(", name=").append(p.getName());
+    }
+    return sb.toString();
+  }
+
+  private ParsedChatResult parseChatResult(
+      String rawResponse, List<AddOnProduct> keyrings, List<AddOnProduct> scarves) {
     if (!StringUtils.hasText(rawResponse)) {
       throw new CustomException(GlobalErrorCode.AI_DESIGN_FAILED);
     }
@@ -380,7 +451,55 @@ public class OpenAiProductDesignRecommender implements ProductDesignRecommender 
       log.warn("시안 개수 부족: {}", recommendations.size());
       throw new CustomException(GlobalErrorCode.AI_DESIGN_FAILED);
     }
-    return recommendations;
+
+    Long charmId = readId(result, "recommendedCharmId", "recommended_charm_id");
+    Long scarfId = readId(result, "recommendedScarfId", "recommended_scarf_id");
+    AddOnProduct charm = resolveById(keyrings, charmId);
+    AddOnProduct scarf = resolveById(scarves, scarfId);
+
+    return new ParsedChatResult(recommendations, charm, scarf);
+  }
+
+  private static Long readId(JsonNode node, String camel, String snake) {
+    JsonNode value = node.path(camel);
+    if (value.isMissingNode() || value.isNull()) {
+      value = node.path(snake);
+    }
+    if (value.isMissingNode() || value.isNull()) {
+      return null;
+    }
+    if (value.isNumber()) {
+      return value.asLong();
+    }
+    String text = value.asText();
+    if (!StringUtils.hasText(text)) {
+      return null;
+    }
+    try {
+      return Long.parseLong(text.trim());
+    } catch (NumberFormatException e) {
+      return null;
+    }
+  }
+
+  /**
+   * AI가 고른 id가 카탈로그에 있으면 사용, 없거나 null이면 첫 번째 active 상품으로 폴백
+   */
+  private static AddOnProduct resolveById(List<AddOnProduct> catalog, Long id) {
+    if (catalog == null || catalog.isEmpty()) {
+      return null;
+    }
+    if (id != null) {
+      Map<Long, AddOnProduct> byId =
+          catalog.stream()
+              .collect(Collectors.toMap(AddOnProduct::getId, Function.identity(), (a, b) -> a));
+      AddOnProduct found = byId.get(id);
+      if (found != null) {
+        return found;
+      }
+      log.warn("AI 추천 add-on id={} 가 카탈로그에 없어 첫 상품으로 폴백", id);
+    }
+    return catalog.get(0);
   }
 
   private static String textOrEmpty(JsonNode node, String field) {
@@ -401,4 +520,7 @@ public class OpenAiProductDesignRecommender implements ProductDesignRecommender 
     }
     return trimmed.trim();
   }
+
+  private record ParsedChatResult(
+      List<DesignRecommendation> designs, AddOnProduct charm, AddOnProduct scarf) {}
 }

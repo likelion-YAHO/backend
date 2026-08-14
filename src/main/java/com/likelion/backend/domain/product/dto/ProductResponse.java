@@ -47,6 +47,18 @@ public class ProductResponse {
   @Schema(description = "사용자 디자인 프롬프트 (아직 미입력 시 null)")
   private String userPrompt;
 
+  @Schema(description = "product 단위 AI 추천 키링/참 ID (design-analysis 후 설정)", example = "3")
+  private Long recommendedCharmId;
+
+  @Schema(description = "product 단위 AI 추천 키링/참 이름", example = "베어 키링")
+  private String recommendedCharmName;
+
+  @Schema(description = "product 단위 AI 추천 스카프 ID", example = "5")
+  private Long recommendedScarfId;
+
+  @Schema(description = "product 단위 AI 추천 스카프 이름", example = "레드 모노그램 스카프")
+  private String recommendedScarfName;
+
   @Schema(description = "제품 이미지 목록")
   private List<ProductImageResponse> images;
 
@@ -74,6 +86,10 @@ public class ProductResponse {
         .sizeHint(product.getSizeHint())
         .message(analysisMessage)
         .userPrompt(product.getUserPrompt())
+        .recommendedCharmId(product.getRecommendedCharmId())
+        .recommendedCharmName(product.getRecommendedCharmName())
+        .recommendedScarfId(product.getRecommendedScarfId())
+        .recommendedScarfName(product.getRecommendedScarfName())
         .images(images.stream().map(ProductImageResponse::from).toList())
         .designOptions(options.stream().map(DesignOptionResponse::from).toList())
         .createdAt(product.getCreatedAt())
