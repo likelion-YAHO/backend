@@ -37,7 +37,7 @@ public class LabDesignService {
 
     private final LabDesignRepository labDesignRepository;
     private final LabMissionRepository labMissionRepository;
-    private final UserRepository userRepository; // 테스트를 위해 임시 유저 조회용
+    private final UserRepository userRepository;
     private final LabDesignLikeRepository labDesignLikeRepository;
 
     private final AiProperties aiProperties;
@@ -67,7 +67,6 @@ public class LabDesignService {
         requestBody.put("prompt", refinedPrompt);
         requestBody.put("n", 1);
         requestBody.put("size", aiProperties.getImageSize());
-        // ❌ 문제의 'response_format'은 깔끔하게 제거했습니다!
 
         HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestBody, headers);
 
@@ -88,7 +87,6 @@ public class LabDesignService {
                 if (data != null && !data.isEmpty()) {
                     Map<String, Object> item = data.get(0);
 
-                    // OpenAI가 url을 주든 b64_json을 주든 안전하게 처리
                     if (item.containsKey("url")) {
                         String imageUrl = (String) item.get("url");
                         return new AiDesignResponseDto(imageUrl);
