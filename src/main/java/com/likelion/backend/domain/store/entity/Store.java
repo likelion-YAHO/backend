@@ -25,4 +25,10 @@ public class Store extends BaseTimeEntity {
 
   @Column(length = 50)
   private String phone;
+
+  @Column(nullable = false)
+  private Double latitude;  // 위도 추가
+
+  @Column(nullable = false)
+  private Double longitude; // 경도 추가
 }
