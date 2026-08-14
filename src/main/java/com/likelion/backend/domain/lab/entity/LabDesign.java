@@ -58,10 +58,24 @@ public class LabDesign extends BaseTimeEntity {
 
     private Integer price; // 선정 후 실물 제작 시 한정판 판매 가격 (NULL 허용)
 
+    @Column(length = 50)
+    private String pointColor;
+
+    @Column(length = 50)
+    private String metalColor;
+
+    private Long charmOptionId;
+
+    private Long scarfOptionId;
+
+    @Column(nullable = false)
+    private Boolean isSoldOut = false; // 품절 여부 기본값 false
+
     @Builder
     public LabDesign(User user, LabMission mission, BaseProduct baseProduct,
                      String designName, String concept, String aiPrompt,
-                     String usedMaterials, String imageUrl) {
+                     String usedMaterials, String imageUrl,
+                     String pointColor, String metalColor, Long charmOptionId, Long scarfOptionId) {
         this.user = user;
         this.mission = mission;
         this.baseProduct = baseProduct;
@@ -70,9 +84,14 @@ public class LabDesign extends BaseTimeEntity {
         this.aiPrompt = aiPrompt;
         this.usedMaterials = usedMaterials;
         this.imageUrl = imageUrl;
+        this.pointColor = pointColor;
+        this.metalColor = metalColor;
+        this.charmOptionId = charmOptionId;
+        this.scarfOptionId = scarfOptionId;
         this.likesCount = 0;
         this.isOfficialSelection = false;
         this.productionStatus = ProductionStatus.VIRTUAL;
+        this.isSoldOut = false;
     }
 
     // 좋아요 증가

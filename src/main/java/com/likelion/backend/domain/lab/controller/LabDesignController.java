@@ -23,13 +23,13 @@ public class LabDesignController {
 
     private final LabDesignService labDesignService;
 
-    @Operation(summary = "AI 디자인 시안 생성 (더미)", description = "프롬프트를 바탕으로 AI 이미지를 생성하여 반환합니다. (현재 프론트 테스트용 더미 데이터 반환)")
+    @Operation(summary = "AI 디자인 시안 생성 ", description = "프롬프트를 바탕으로 AI 이미지를 생성하여 반환합니다.")
     @PostMapping("/generate")
     public ResponseEntity<BaseResponse<AiDesignResponseDto>> generateAiDesign(@Valid @RequestBody AiDesignRequestDto request) {
-        AiDesignResponseDto response = labDesignService.generateAiDesignDummy(request);
+        AiDesignResponseDto response = labDesignService.generateAiDesign(request);
 
         return ResponseEntity.ok(
-                BaseResponse.success("AI 디자인 시안(더미) 생성에 성공했습니다.", response)
+                BaseResponse.success("AI 디자인 시안 생성에 성공했습니다.", response)
         );
     }
 

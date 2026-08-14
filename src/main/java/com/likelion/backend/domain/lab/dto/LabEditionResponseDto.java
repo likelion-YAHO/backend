@@ -26,6 +26,9 @@ public class LabEditionResponseDto {
     @Schema(description = "판매 가격", example = "1500000")
     private Integer price;
 
+    @Schema(description = "품절 여부", example = "true")
+    private Boolean isSoldOut;
+
     public LabEditionResponseDto(LabDesign design) {
         this.id = design.getId();
         this.designName = design.getDesignName();
@@ -33,5 +36,6 @@ public class LabEditionResponseDto {
         this.nickname = design.getUser().getNickname();
         this.productionStatus = design.getProductionStatus();
         this.price = design.getPrice();
+        this.isSoldOut = design.getIsSoldOut();
     }
 }
