@@ -19,7 +19,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -112,17 +111,5 @@ public class ProductController {
             ? "캐시된 미리보기를 반환했습니다."
             : "미리보기 이미지 생성에 성공했습니다.";
     return ResponseEntity.ok(BaseResponse.success(message, response));
-  }
-
-  @Operation(
-      summary = "제품 삭제",
-      description = "등록한 제품, 시안, 로컬 이미지를 삭제합니다. (본인 제품만 삭제 가능)",
-      security = @SecurityRequirement(name = "bearerAuth"))
-  @DeleteMapping("/{productId}")
-  public ResponseEntity<BaseResponse<Void>> deleteProduct(
-      @Parameter(description = "제품 ID", example = "1") @PathVariable Long productId) {
-    Long userId = SecurityUtils.getCurrentUserId();
-    productService.deleteProduct(userId, productId);
-    return ResponseEntity.ok(BaseResponse.success("제품 삭제에 성공했습니다.", null));
   }
 }

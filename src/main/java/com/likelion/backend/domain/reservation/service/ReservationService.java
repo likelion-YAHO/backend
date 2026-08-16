@@ -39,11 +39,8 @@ public class ReservationService {
     }
 
     // 2. [사용자용] 예약 상세 조회
-    public ReservationDetailResponseDto getReservationDetail(Long reservationId) {
-        Reservation reservation = reservationRepository.findById(reservationId)
-                .orElseThrow(() -> new CustomException(GlobalErrorCode.RESERVATION_NOT_FOUND));
-
-        return ReservationDetailResponseDto.from(reservation);
+    public ReservationDetailResponseDto getReservationDetail(Long reservationId, Long userId) {
+        return ReservationDetailResponseDto.from(getOwnedReservation(reservationId, userId));
     }
 
     // 3. [매장 직원용] 바코드 스캔 조회
@@ -60,8 +57,10 @@ public class ReservationService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new CustomException(GlobalErrorCode.USER_NOT_FOUND));
 
-        Reform reform = reformRepository.findById(request.getReformId())
-                .orElseThrow(() -> new CustomException(GlobalErrorCode.PRODUCT_NOT_FOUND));
+        Reform reform = getOwnedReform(request.getReformId(), userId);
+        if (reservationRepository.existsByReform_Id(reform.getId())) {
+            throw new CustomException(GlobalErrorCode.RESERVATION_ALREADY_EXISTS);
+        }
 
         Store store = storeRepository.findById(request.getStoreId())
                 .orElseThrow(() -> new CustomException(GlobalErrorCode.STORE_NOT_FOUND));
@@ -89,17 +88,11 @@ public class ReservationService {
     // 5. 예약 취소
     @Transactional
     public void cancelReservation(Long reservationId, Long userId) {
-        Reservation reservation = reservationRepository.findById(reservationId)
-                .orElseThrow(() -> new CustomException(GlobalErrorCode.RESERVATION_NOT_FOUND));
+        Reservation reservation = getOwnedReservation(reservationId, userId);
 
         // 이미 취소된 예약인지 확인
         if (reservation.getStatus() == ReservationStatus.CANCELLED) {
             throw new CustomException(GlobalErrorCode.RESERVATION_ALREADY_CANCELLED);
-        }
-
-        // 본인 예약인지 검증
-        if (!reservation.getUser().getId().equals(userId)) {
-            throw new CustomException(GlobalErrorCode.INVALID_INPUT_VALUE);
         }
 
         // 상태를 취소로 변경
@@ -108,18 +101,16 @@ public class ReservationService {
 
     @Transactional
     public ReservationDetailResponseDto updateReservation(Long reservationId, ReservationCreateRequest request, Long userId) {
-        Reservation reservation = reservationRepository.findById(reservationId)
-                .orElseThrow(() -> new CustomException(GlobalErrorCode.RESERVATION_NOT_FOUND));
-
-        if (!reservation.getUser().getId().equals(userId)) {
-            throw new CustomException(GlobalErrorCode.INVALID_INPUT_VALUE);
-        }
+        Reservation reservation = getOwnedReservation(reservationId, userId);
 
         Store store = storeRepository.findById(request.getStoreId())
                 .orElseThrow(() -> new CustomException(GlobalErrorCode.STORE_NOT_FOUND));
 
-        Reform reform = reformRepository.findById(request.getReformId())
-                .orElseThrow(() -> new CustomException(GlobalErrorCode.PRODUCT_NOT_FOUND));
+        Reform reform = getOwnedReform(request.getReformId(), userId);
+        if (!reform.getId().equals(reservation.getReform().getId())
+                && reservationRepository.existsByReform_Id(reform.getId())) {
+            throw new CustomException(GlobalErrorCode.RESERVATION_ALREADY_EXISTS);
+        }
 
         reservation.updateDetails(request.getVisitDate(), store, reform);
 
@@ -128,17 +119,30 @@ public class ReservationService {
 
     @Transactional
     public void restoreReservation(Long reservationId, Long userId) {
-        Reservation reservation = reservationRepository.findById(reservationId)
-                .orElseThrow(() -> new CustomException(GlobalErrorCode.RESERVATION_NOT_FOUND));
-
-        if (!reservation.getUser().getId().equals(userId)) {
-            throw new CustomException(GlobalErrorCode.INVALID_INPUT_VALUE);
-        }
+        Reservation reservation = getOwnedReservation(reservationId, userId);
 
         // 취소된 상태가 아니라면 복원할 필요 없음
         if (reservation.getStatus() == ReservationStatus.CANCELLED) {
             reservation.updateStatus(ReservationStatus.RECEIVED); // 다시 접수 상태로
         }
+    }
+
+    private Reservation getOwnedReservation(Long reservationId, Long userId) {
+        Reservation reservation = reservationRepository.findById(reservationId)
+                .orElseThrow(() -> new CustomException(GlobalErrorCode.RESERVATION_NOT_FOUND));
+        if (!reservation.getUser().getId().equals(userId)) {
+            throw new CustomException(GlobalErrorCode.RESERVATION_ACCESS_DENIED);
+        }
+        return reservation;
+    }
+
+    private Reform getOwnedReform(Long reformId, Long userId) {
+        Reform reform = reformRepository.findById(reformId)
+                .orElseThrow(() -> new CustomException(GlobalErrorCode.REFORM_NOT_FOUND));
+        if (!reform.getProduct().getUser().getId().equals(userId)) {
+            throw new CustomException(GlobalErrorCode.REFORM_ACCESS_DENIED);
+        }
+        return reform;
     }
 
     // UPC-7K4D-92LM 형식의 고유 주문 번호 생성기

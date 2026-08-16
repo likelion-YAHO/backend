@@ -174,18 +174,6 @@ public class ProductService {
     return DesignAnalysisResponse.of(product, savedOptions);
   }
 
-  @Transactional
-  public void deleteProduct(Long userId, Long productId) {
-    Product product = getOwnedProduct(userId, productId);
-    List<ProductImage> images =
-        productImageRepository.findAllByProductIdOrderBySortOrderAsc(product.getId());
-
-    deleteExistingDesignOptions(product.getId(), images);
-    images.forEach(image -> fileStorageService.deleteByUrl(image.getImageUrl()));
-    productImageRepository.deleteAll(images);
-    productRepository.delete(product);
-  }
-
   /** 기존 시안 DB 삭제 + 생성 이미지 파일 정리(제품 원본 URL은 삭제하지 않음) */
   private void deleteExistingDesignOptions(Long productId, List<ProductImage> productImages) {
     List<DesignOption> existing =

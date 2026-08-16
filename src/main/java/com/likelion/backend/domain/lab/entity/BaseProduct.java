@@ -1,4 +1,4 @@
-package com.likelion.backend.domain.lab.entity; // 패키지 경로는 상황에 맞게 수정!
+package com.likelion.backend.domain.lab.entity;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
