@@ -22,11 +22,15 @@ public class LabDesignListResponseDto {
     @Schema(description = "창작자 닉네임", example = "김사자")
     private String nickname;
 
-    public LabDesignListResponseDto(LabDesign design) {
+    @Schema(description = "내가 좋아요를 눌렀는지 여부", example = "true")
+    private boolean isLiked;
+
+    public LabDesignListResponseDto(LabDesign design, boolean isLiked) {
         this.id = design.getId();
         this.designName = design.getDesignName();
         this.imageUrl = design.getImageUrl();
         this.likesCount = design.getLikesCount();
         this.nickname = design.getUser().getNickname();
+        this.isLiked = isLiked;
     }
 }
