@@ -163,4 +163,17 @@ public class ReservationService {
 
         return sb.toString();
     }
+
+    @Transactional // 👈 DB 상태가 변경되므로 반드시 트랜잭션 어노테이션 확인!
+    public ReservationDetailResponseDto scanBarcodeAndUpdateStatus(String orderNumber) {
+        // 1. 기존 예약 조회 로직 (CustomException 에러 코드 수정)
+        Reservation reservation = reservationRepository.findByOrderNumber(orderNumber)
+                .orElseThrow(() -> new CustomException(GlobalErrorCode.RESERVATION_NOT_FOUND));
+
+        // 2. 수령 완료 처리 로직 추가 (현재 시간 기록)
+        reservation.completePickUp(LocalDateTime.now());
+
+        // 3. 응답 반환 (from 팩토리 메서드 사용)
+        return ReservationDetailResponseDto.from(reservation);
+    }
 }
