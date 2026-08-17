@@ -31,17 +31,17 @@ public class LabDesign extends BaseTimeEntity {
     @Column(nullable = false, length = 50)
     private BaseProduct baseProduct; // 커스텀 베이스 가방
 
-    @Column(nullable = false, length = 100)
-    private String designName; // 유저가 지은 디자인명
+    @Column(length = 100)
+    private String designName;
 
-    @Column(nullable = false, columnDefinition = "TEXT")
-    private String concept; // 디자인 콘셉트 설명
+    @Column(columnDefinition = "TEXT")
+    private String concept;
+
+    @Column 
+    private String usedMaterials;
 
     @Column(columnDefinition = "TEXT")
     private String aiPrompt; // AI 시안 생성 시 사용했던 프롬프트
-
-    @Column(nullable = false)
-    private String usedMaterials; // 사용한 부자재/소재
 
     @Column(nullable = false)
     private String imageUrl; // 최종 렌더링(생성)된 가상 이미지 URL

@@ -92,7 +92,22 @@ public class LabDesignService {
         // 2. 진짜 AI 호출 로직
         String imageUrl = generateAndStoreImage(request.getBaseProduct(), request.getPrompt());
         attempt.incrementTryCount();
-        return new AiDesignResponseDto(imageUrl, attempt.getTryCount());
+
+        // TODO: 추후 Lab 전용 AI 추천 로직 추가 시, 아래 하드코딩된 추천 참/스카프 ID 및 이름을 실제 DB 또는 AI 응답 값으로 연동 필요!
+        Long recommendedCharmId = 3L; // 실제 DB에 존재하는 참 ID
+        String recommendedCharmName = "베어 키링";
+        Long recommendedScarfId = 5L; // 실제 DB에 존재하는 스카프 ID
+        String recommendedScarfName = "레드 모노그램 스카프";
+
+        return new AiDesignResponseDto(
+                imageUrl,
+                attempt.getTryCount(),
+                recommendedCharmId,
+                recommendedCharmName,
+                recommendedScarfId,
+                recommendedScarfName,
+                List.of() // designOptions (랩 플로우에서는 사용하지 않으므로 빈 리스트 전달)
+        );
     }
 
     @Transactional
