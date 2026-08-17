@@ -76,6 +76,7 @@ public class Reservation extends BaseTimeEntity {
   private LocalDateTime completedAt;            // 제작 완료 시간
   private LocalDateTime shippingAt;             // 배송 중 시간
   private LocalDateTime storeArrivedAt;         // 매장 도착 시간
+  private LocalDateTime pickedUpAt;
 
   // 예상 도착일
   private LocalDateTime estimatedStoreArrivalDate;
@@ -93,5 +94,10 @@ public class Reservation extends BaseTimeEntity {
       default -> {
       }
     }
+  }
+
+  public void completePickUp(LocalDateTime now) {
+    this.status = ReservationStatus.PICKED_UP;
+    this.pickedUpAt = now;
   }
 }

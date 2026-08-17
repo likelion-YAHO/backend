@@ -17,6 +17,7 @@ public enum ReservationStatus {
   COMPLETED("제작 완료"),
   SHIPPING("배송 중"),
   ARRIVED_AT_STORE("매장 도착"),
+  PICKED_UP("수령 완료"),
   CANCELLED("취소");
 
   private final String label;
