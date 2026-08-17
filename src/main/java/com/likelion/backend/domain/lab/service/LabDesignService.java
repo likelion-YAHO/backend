@@ -217,7 +217,7 @@ public class LabDesignService {
     }
 
     @Transactional(readOnly = true)
-    public List<LabDesignListResponseDto> getGalleryList(String sort) {
+    public List<LabDesignListResponseDto> getGalleryList(Long userId, String sort) {
         List<LabDesign> designs;
 
         if ("popular".equalsIgnoreCase(sort)) {
@@ -228,8 +228,19 @@ public class LabDesignService {
                     ProductionStatus.VIRTUAL);
         }
 
+        // 1. 로그인한 유저가 누른 디자인 ID 목록 세팅
+        java.util.Set<Long> likedDesignIds = new java.util.HashSet<>();
+        if (userId != null) {
+            List<LabDesignLike> userLikes = labDesignLikeRepository.findAllByUserId(userId);
+            likedDesignIds = userLikes.stream()
+                    .map(like -> like.getLabDesign().getId())
+                    .collect(Collectors.toSet());
+        }
+
+        // 2. DTO 변환 시 isLiked 상태 함께 전달
+        java.util.Set<Long> finalLikedIds = likedDesignIds;
         return designs.stream()
-                .map(LabDesignListResponseDto::new)
+                .map(design -> new LabDesignListResponseDto(design, finalLikedIds.contains(design.getId())))
                 .collect(Collectors.toList());
     }
 
