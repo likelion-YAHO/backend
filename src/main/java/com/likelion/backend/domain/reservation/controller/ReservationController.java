@@ -53,12 +53,12 @@ public class ReservationController {
         );
     }
 
-    @Operation(summary = "[매장 직원용] 바코드 스캔 조회", description = "주문 번호(예: UPC-7K4D-92LM)를 통해 예약 정보를 조회합니다.")
+    @Operation(summary = "[매장 직원용] 바코드 스캔 조회 및 수령 처리", description = "주문 번호(예: UPC-7K4D-92LM)를 통해 예약 정보를 조회하고 수령 완료 상태로 변경합니다.")
     @GetMapping("/scan/{orderNumber}")
     public ResponseEntity<BaseResponse<ReservationDetailResponseDto>> getReservationByOrderNumber(
             @Parameter(description = "주문 번호", example = "UPC-7K4D-92LM") @PathVariable String orderNumber) {
         return ResponseEntity.ok(
-                BaseResponse.success("바코드 스캔 조회에 성공했습니다.", reservationService.getReservationByOrderNumber(orderNumber))
+                BaseResponse.success("바코드 스캔 및 수령 처리에 성공했습니다.", reservationService.scanBarcodeAndUpdateStatus(orderNumber))
         );
     }
 

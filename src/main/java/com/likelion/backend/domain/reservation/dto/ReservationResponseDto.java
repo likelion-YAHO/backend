@@ -14,8 +14,9 @@ public class ReservationResponseDto {
     private String currentStatus;
     private LocalDateTime visitDate;
     private String barcode;
-    private String productName; // 추가
-    private String storeName;   // 추가
+    private String productName; 
+    private String storeName;
+    private String productImageUrl;
 
     public static ReservationResponseDto from(Reservation reservation) {
         return ReservationResponseDto.builder()

@@ -16,6 +16,10 @@ public class ReservationDetailResponseDto {
     private LocalDateTime visitDate;
     private String barcode;
 
+    private Long reformId;
+    private Long storeId;
+    private String productImageUrl;
+
     private LocalDateTime receivedAt;
     private LocalDateTime hqArrivedAt;
     private LocalDateTime inspectingAt;
@@ -24,6 +28,7 @@ public class ReservationDetailResponseDto {
     private LocalDateTime shippingAt;
     private LocalDateTime storeArrivedAt;
     private LocalDateTime estimatedStoreArrivalDate;
+    private LocalDateTime pickedUpAt;
 
     public static ReservationDetailResponseDto from(Reservation reservation) {
         return ReservationDetailResponseDto.builder()
@@ -34,6 +39,9 @@ public class ReservationDetailResponseDto {
                 .currentStatus(reservation.getStatus().getLabel())
                 .visitDate(reservation.getVisitDate())
                 .barcode(reservation.getBarcode())
+                .reformId(reservation.getReform().getId())
+                .storeId(reservation.getStore().getId())
+                .productImageUrl(reservation.getReform().getPreviewImageUrl())
                 .receivedAt(reservation.getReceivedAt())
                 .hqArrivedAt(reservation.getHqArrivedAt())
                 .inspectingAt(reservation.getInspectingAt())
@@ -42,6 +50,7 @@ public class ReservationDetailResponseDto {
                 .shippingAt(reservation.getShippingAt())
                 .storeArrivedAt(reservation.getStoreArrivedAt())
                 .estimatedStoreArrivalDate(reservation.getEstimatedStoreArrivalDate())
+                .pickedUpAt(reservation.getPickedUpAt())
                 .build();
     }
 }
