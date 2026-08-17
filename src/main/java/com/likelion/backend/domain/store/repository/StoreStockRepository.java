@@ -9,4 +9,6 @@ public interface StoreStockRepository extends JpaRepository<StoreStock, Long> {
     // 랩 에디션 ID로 매장 재고 리스트 찾기 (Store 정보도 같이 가져오기 위해 EntityGraph 사용)
     @EntityGraph(attributePaths = {"store"})
     List<StoreStock> findAllByLabDesignId(Long labDesignId);
+
+    boolean existsByLabDesignId(Long labDesignId);
 }

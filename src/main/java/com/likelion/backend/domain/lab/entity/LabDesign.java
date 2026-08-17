@@ -112,6 +112,21 @@ public class LabDesign extends BaseTimeEntity {
         this.stock = stock;
     }
 
+    public void markAsReadyEdition(Integer price) {
+        this.isOfficialSelection = true;
+        this.productionStatus = ProductionStatus.READY;
+        this.price = price;
+        this.isSoldOut = this.stock == null || this.stock <= 0;
+    }
+
+    public void initLikesCount(int likesCount) {
+        this.likesCount = Math.max(likesCount, 0);
+    }
+
+    public void updateImageUrl(String imageUrl) {
+        this.imageUrl = imageUrl;
+    }
+
     // 좋아요 증가
     public void incrementLikeCount() {
         this.likesCount++;

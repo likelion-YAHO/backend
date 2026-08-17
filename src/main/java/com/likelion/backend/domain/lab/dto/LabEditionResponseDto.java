@@ -14,6 +14,9 @@ public class LabEditionResponseDto {
     @Schema(description = "디자인명", example = "나만의 꼬냑 백팩")
     private String designName;
 
+    @Schema(description = "콘셉트/시즌명", example = "Summer Remix")
+    private String concept;
+
     @Schema(description = "이미지 URL", example = "https://...")
     private String imageUrl;
 
@@ -44,6 +47,7 @@ public class LabEditionResponseDto {
     public LabEditionResponseDto(LabDesign design) {
         this.id = design.getId();
         this.designName = design.getDesignName();
+        this.concept = design.getConcept();
         this.imageUrl = design.getImageUrl();
         this.nickname = (design.getUser() != null) ? design.getUser().getNickname() : "알 수 없음";
         this.productionStatus = design.getProductionStatus();
