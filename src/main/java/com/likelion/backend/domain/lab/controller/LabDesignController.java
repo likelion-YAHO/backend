@@ -60,7 +60,9 @@ public class LabDesignController {
             @Parameter(description = "정렬 기준 (latest 또는 popular)", example = "latest")
             @RequestParam(defaultValue = "latest") String sort) {
 
-        List<LabDesignListResponseDto> response = labDesignService.getGalleryList(sort);
+        Long userId = SecurityUtils.getCurrentUserId();
+
+        List<LabDesignListResponseDto> response = labDesignService.getGalleryList(userId, sort);
 
         return ResponseEntity.ok(
                 BaseResponse.success("갤러리 목록 조회에 성공했습니다.", response)
