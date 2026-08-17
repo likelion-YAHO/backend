@@ -206,9 +206,11 @@ public class LabDesignService {
         List<LabDesign> designs;
 
         if ("popular".equalsIgnoreCase(sort)) {
-            designs = labDesignRepository.findAllByOrderByLikesCountDesc();
+            designs = labDesignRepository.findAllByProductionStatusOrderByLikesCountDesc(
+                    ProductionStatus.VIRTUAL);
         } else {
-            designs = labDesignRepository.findAllByOrderByCreatedAtDesc();
+            designs = labDesignRepository.findAllByProductionStatusOrderByCreatedAtDesc(
+                    ProductionStatus.VIRTUAL);
         }
 
         return designs.stream()

@@ -71,11 +71,25 @@ public class LabDesign extends BaseTimeEntity {
     @Column(nullable = false)
     private Boolean isSoldOut = false; // 품절 여부 기본값 false
 
+    @Column(length = 50)
+    private String color;
+
+    @Column(length = 20)
+    private String size;
+
+    @Column(columnDefinition = "TEXT")
+    private String description;
+
+    @Column
+    private Integer stock;
+
     @Builder
     public LabDesign(User user, LabMission mission, BaseProduct baseProduct,
                      String designName, String concept, String aiPrompt,
                      String usedMaterials, String imageUrl,
-                     String pointColor, String metalColor, Long charmOptionId, Long scarfOptionId) {
+                     String pointColor, String metalColor, Long charmOptionId, Long scarfOptionId,
+                     String color, String size, String description, Integer stock) {
+
         this.user = user;
         this.mission = mission;
         this.baseProduct = baseProduct;
@@ -92,6 +106,25 @@ public class LabDesign extends BaseTimeEntity {
         this.isOfficialSelection = false;
         this.productionStatus = ProductionStatus.VIRTUAL;
         this.isSoldOut = false;
+        this.color = color;
+        this.size = size;
+        this.description = description;
+        this.stock = stock;
+    }
+
+    public void markAsReadyEdition(Integer price) {
+        this.isOfficialSelection = true;
+        this.productionStatus = ProductionStatus.READY;
+        this.price = price;
+        this.isSoldOut = this.stock == null || this.stock <= 0;
+    }
+
+    public void initLikesCount(int likesCount) {
+        this.likesCount = Math.max(likesCount, 0);
+    }
+
+    public void updateImageUrl(String imageUrl) {
+        this.imageUrl = imageUrl;
     }
 
     // 좋아요 증가
