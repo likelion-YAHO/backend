@@ -102,6 +102,18 @@ public class LabDesignController {
     }
 
     @Operation(
+            summary = "출품작 삭제",
+            description = "본인이 제출한 가상 출품작을 삭제합니다. 선정/판매 에디션은 삭제할 수 없습니다.",
+            security = @SecurityRequirement(name = "bearerAuth"))
+    @DeleteMapping("/{designId}")
+    public ResponseEntity<BaseResponse<Void>> deleteLabDesign(
+            @Parameter(description = "디자인 식별자", example = "1") @PathVariable Long designId) {
+        Long userId = SecurityUtils.getCurrentUserId();
+        labDesignService.deleteLabDesign(userId, designId);
+        return ResponseEntity.ok(BaseResponse.success("출품작이 삭제되었습니다.", null));
+    }
+
+    @Operation(
             summary = "디자인 좋아요 토글",
             description = "갤러리 작품의 좋아요를 켜거나 끕니다.",
             security = @SecurityRequirement(name = "bearerAuth"))

@@ -1,7 +1,5 @@
 package com.likelion.backend.domain.lab.service;
 
-import com.likelion.backend.domain.catalog.entity.AddOnProduct;
-import com.likelion.backend.domain.catalog.repository.AddOnProductRepository;
 import com.likelion.backend.domain.lab.dto.AiDesignRequestDto;
 import com.likelion.backend.domain.lab.dto.AiDesignResponseDto;
 import com.likelion.backend.domain.lab.dto.LabDesignCreateRequestDto;
@@ -58,7 +56,6 @@ public class LabDesignService {
     private final UserRepository userRepository;
     private final LabDesignLikeRepository labDesignLikeRepository;
     private final LabAiGenerationAttemptRepository labAiGenerationAttemptRepository;
-    private final AddOnProductRepository addOnProductRepository;
     private final LabAddonRecommender labAddonRecommender;
     private final FileStorageService fileStorageService;
     private final AiProperties aiProperties;
@@ -123,7 +120,6 @@ public class LabDesignService {
         LabMission mission = labMissionRepository.findById(request.getMissionId())
                 .orElseThrow(() -> new CustomException(GlobalErrorCode.LAB_MISSION_NOT_FOUND));
 
-        String imageUrl = resolveSubmitImageUrl(request);
         LabDesign labDesign = LabDesign.builder()
                 .user(user)
                 .mission(mission)
@@ -132,7 +128,7 @@ public class LabDesignService {
                 .concept(request.getConcept())
                 .aiPrompt(request.getAiPrompt())
                 .usedMaterials(request.getUsedMaterials())
-                .imageUrl(imageUrl)
+                .imageUrl(request.getImageUrl())
                 .pointColor(request.getPointColor())
                 .metalColor(request.getMetalColor())
                 .charmOptionId(request.getCharmOptionId())
@@ -156,16 +152,6 @@ public class LabDesignService {
 
         LabDesign savedDesign = labDesignRepository.save(labDesign);
         return new LabDesignResponseDto(savedDesign);
-    }
-
-    private String resolveSubmitImageUrl(LabDesignCreateRequestDto request) {
-        if (StringUtils.hasText(request.getPreviewImageUrl())) {
-            if (!LabDesignImageUrls.isLabManagedImage(request.getPreviewImageUrl())) {
-                throw new CustomException(GlobalErrorCode.LAB_PREVIEW_SOURCE_INVALID);
-            }
-            return request.getPreviewImageUrl().trim();
-        }
-        return request.getImageUrl();
     }
 
     private String generateAndStoreImage(BaseProduct baseProduct, String prompt) {
@@ -276,17 +262,7 @@ public class LabDesignService {
         LabDesign design = labDesignRepository.findById(designId)
                 .orElseThrow(() -> new CustomException(GlobalErrorCode.LAB_DESIGN_NOT_FOUND));
 
-        return new LabDesignDetailResponseDto(
-                design,
-                resolveAddOnName(design.getCharmOptionId()),
-                resolveAddOnName(design.getScarfOptionId()));
-    }
-
-    private String resolveAddOnName(Long addOnId) {
-        if (addOnId == null) {
-            return null;
-        }
-        return addOnProductRepository.findById(addOnId).map(AddOnProduct::getName).orElse(null);
+        return new LabDesignDetailResponseDto(design);
     }
 
     @Transactional
@@ -316,6 +292,22 @@ public class LabDesignService {
         }
 
         return new LabDesignLikeResponseDto(isLiked, design.getLikesCount());
+    }
+
+    @Transactional
+    public void deleteLabDesign(Long userId, Long designId) {
+        LabDesign design = labDesignRepository.findById(designId)
+                .orElseThrow(() -> new CustomException(GlobalErrorCode.LAB_DESIGN_NOT_FOUND));
+        if (!design.getUser().getId().equals(userId)) {
+            throw new CustomException(GlobalErrorCode.LAB_DESIGN_ACCESS_DENIED);
+        }
+        if (design.getProductionStatus() != ProductionStatus.VIRTUAL
+                || Boolean.TRUE.equals(design.getIsOfficialSelection())) {
+            throw new CustomException(GlobalErrorCode.LAB_DESIGN_NOT_DELETABLE);
+        }
+
+        labDesignLikeRepository.deleteAllByLabDesignId(designId);
+        labDesignRepository.delete(design);
     }
 
     @Transactional(readOnly = true)

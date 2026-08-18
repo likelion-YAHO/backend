@@ -30,11 +30,6 @@ public class LabDesignCreateRequestDto {
     @Schema(description = "최종 생성된 이미지 URL", example = "https://...")
     private String imageUrl;
 
-    @Schema(
-            description = "커스텀 미리보기 이미지 URL (있으면 출품 이미지로 사용)",
-            example = "http://localhost:8080/uploads/lab-previews/uuid.png")
-    private String previewImageUrl;
-
     @Schema(description = "포인트 컬러 코드 (선택)", example = "PINK")
     private String pointColor;
 
