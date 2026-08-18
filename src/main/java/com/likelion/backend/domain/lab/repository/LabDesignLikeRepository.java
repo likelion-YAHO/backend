@@ -13,4 +13,6 @@ public interface LabDesignLikeRepository extends JpaRepository<LabDesignLike, Lo
 
     // 특정 유저가 누른 모든 좋아요 기록 가져오기
     List<LabDesignLike> findAllByUserId(Long userId);
+
+    void deleteAllByLabDesignId(Long labDesignId);
 }
