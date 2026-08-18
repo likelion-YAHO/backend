@@ -56,6 +56,7 @@ public class LabDesignService {
     private final UserRepository userRepository;
     private final LabDesignLikeRepository labDesignLikeRepository;
     private final LabAiGenerationAttemptRepository labAiGenerationAttemptRepository;
+    private final LabAddonRecommender labAddonRecommender;
     private final FileStorageService fileStorageService;
     private final AiProperties aiProperties;
 
@@ -89,25 +90,26 @@ public class LabDesignService {
             throw new CustomException(GlobalErrorCode.AI_GENERATION_LIMIT_EXCEEDED);
         }
 
-        // 2. 진짜 AI 호출 로직
         String imageUrl = generateAndStoreImage(request.getBaseProduct(), request.getPrompt());
         attempt.incrementTryCount();
 
-        // TODO: 추후 Lab 전용 AI 추천 로직 추가 시, 아래 하드코딩된 추천 참/스카프 ID 및 이름을 실제 DB 또는 AI 응답 값으로 연동 필요!
-        Long recommendedCharmId = 3L; // 실제 DB에 존재하는 참 ID
-        String recommendedCharmName = "베어 키링";
-        Long recommendedScarfId = 5L; // 실제 DB에 존재하는 스카프 ID
-        String recommendedScarfName = "레드 모노그램 스카프";
+        LabAddonRecommendation recommendation =
+                labAddonRecommender.recommend(
+                        request.getBaseProduct(), request.getPrompt(), mission);
+        attempt.recordGeneration(
+                imageUrl,
+                recommendation.getRecommendedCharmId(),
+                recommendation.getRecommendedCharmName(),
+                recommendation.getRecommendedScarfId(),
+                recommendation.getRecommendedScarfName());
 
         return new AiDesignResponseDto(
                 imageUrl,
                 attempt.getTryCount(),
-                recommendedCharmId,
-                recommendedCharmName,
-                recommendedScarfId,
-                recommendedScarfName,
-                List.of() // designOptions (랩 플로우에서는 사용하지 않으므로 빈 리스트 전달)
-        );
+                recommendation.getRecommendedCharmId(),
+                recommendation.getRecommendedCharmName(),
+                recommendation.getRecommendedScarfId(),
+                recommendation.getRecommendedScarfName());
     }
 
     @Transactional
@@ -133,11 +135,22 @@ public class LabDesignService {
                 .scarfOptionId(request.getScarfOptionId())
                 .build();
 
-        LabDesign savedDesign = labDesignRepository.save(labDesign);
         if (request.getBaseProduct() != null) {
+            labAiGenerationAttemptRepository
+                    .findByUser_IdAndMission_IdAndBaseProduct(
+                            userId, mission.getId(), request.getBaseProduct())
+                    .ifPresent(
+                            attempt ->
+                                    labDesign.applyAddonRecommendations(
+                                            attempt.getRecommendedCharmId(),
+                                            attempt.getRecommendedCharmName(),
+                                            attempt.getRecommendedScarfId(),
+                                            attempt.getRecommendedScarfName()));
             labAiGenerationAttemptRepository.deleteByUser_IdAndMission_IdAndBaseProduct(
                     userId, mission.getId(), request.getBaseProduct());
         }
+
+        LabDesign savedDesign = labDesignRepository.save(labDesign);
         return new LabDesignResponseDto(savedDesign);
     }
 
@@ -279,6 +292,22 @@ public class LabDesignService {
         }
 
         return new LabDesignLikeResponseDto(isLiked, design.getLikesCount());
+    }
+
+    @Transactional
+    public void deleteLabDesign(Long userId, Long designId) {
+        LabDesign design = labDesignRepository.findById(designId)
+                .orElseThrow(() -> new CustomException(GlobalErrorCode.LAB_DESIGN_NOT_FOUND));
+        if (!design.getUser().getId().equals(userId)) {
+            throw new CustomException(GlobalErrorCode.LAB_DESIGN_ACCESS_DENIED);
+        }
+        if (design.getProductionStatus() != ProductionStatus.VIRTUAL
+                || Boolean.TRUE.equals(design.getIsOfficialSelection())) {
+            throw new CustomException(GlobalErrorCode.LAB_DESIGN_NOT_DELETABLE);
+        }
+
+        labDesignLikeRepository.deleteAllByLabDesignId(designId);
+        labDesignRepository.delete(design);
     }
 
     @Transactional(readOnly = true)
