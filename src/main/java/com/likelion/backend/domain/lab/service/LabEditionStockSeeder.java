@@ -1,6 +1,5 @@
 package com.likelion.backend.domain.lab.service;
 
-import com.likelion.backend.domain.lab.entity.BaseProduct;
 import com.likelion.backend.domain.lab.entity.LabDesign;
 import com.likelion.backend.domain.lab.entity.LabMission;
 import com.likelion.backend.domain.lab.entity.ProductionStatus;
@@ -37,29 +36,6 @@ public class LabEditionStockSeeder implements ApplicationRunner {
           "MCM 롯데면세점 명동본점", 0,
           "MCM KUNSTHALLE", 0);
 
-  private static final List<EditionSeed> EDITIONS =
-      List.of(
-          new EditionSeed(
-              BaseProduct.STARK_SIDE_STUDS_BACKPACK,
-              "Stark Side Studs Backpack",
-              "Summer Remix",
-              "/seed-stark-side-studs.png",
-              "Sand",
-              "M",
-              "피라미드 모양 스터드 장식과 천연 나파 가죽 트림이 특징인 비세토스 모노그램 캔버스 백팩",
-              2,
-              1_350_000),
-          new EditionSeed(
-              BaseProduct.TONI_TOP_ZIP_SHOPPER,
-              "Toni Top-Zip Shopper Bag",
-              "Summer Remix",
-              "/mcmlab_toni_top_zip_shopper.png",
-              "Sand",
-              "M",
-              "라이트 톤 비세토스와 스카프 포인트가 특징인 탑집 쇼퍼백",
-              2,
-              1_350_000));
-
   private final StoreStockRepository storeStockRepository;
   private final StoreRepository storeRepository;
   private final LabDesignRepository labDesignRepository;
@@ -86,7 +62,7 @@ public class LabEditionStockSeeder implements ApplicationRunner {
     int createdEditions = 0;
     int createdStocks = 0;
 
-    for (EditionSeed seed : EDITIONS) {
+    for (LabEditionCatalog.Item seed : LabEditionCatalog.ITEMS) {
       LabDesign edition =
           labDesignRepository
               .findFirstByDesignNameAndProductionStatusNot(
@@ -95,8 +71,14 @@ public class LabEditionStockSeeder implements ApplicationRunner {
       if (edition == null) {
         edition = createEdition(mission, creator, seed);
         createdEditions++;
-      } else if (!seed.imageUrl().equals(edition.getImageUrl())) {
-        edition.updateImageUrl(seed.imageUrl());
+      } else {
+        edition.syncReadyEditionCatalog(
+            seed.primaryImageUrl(),
+            seed.concept(),
+            seed.color(),
+            seed.size(),
+            seed.stock(),
+            seed.price());
       }
 
       if (!storeStockRepository.existsByLabDesignId(edition.getId())) {
@@ -124,7 +106,7 @@ public class LabEditionStockSeeder implements ApplicationRunner {
                         .build()));
   }
 
-  private LabDesign createEdition(LabMission mission, User creator, EditionSeed seed) {
+  private LabDesign createEdition(LabMission mission, User creator, LabEditionCatalog.Item seed) {
     LabDesign design =
         LabDesign.builder()
             .user(creator)
@@ -134,10 +116,9 @@ public class LabEditionStockSeeder implements ApplicationRunner {
             .concept(seed.concept())
             .aiPrompt(seed.concept() + " " + seed.baseProduct().getProductName())
             .usedMaterials("Vintage Visetos, Suede, Nappa Leather")
-            .imageUrl(seed.imageUrl())
+            .imageUrl(seed.primaryImageUrl())
             .color(seed.color())
             .size(seed.size())
-            .description(seed.description())
             .stock(seed.stock())
             .build();
     design.markAsReadyEdition(seed.price());
@@ -156,14 +137,4 @@ public class LabEditionStockSeeder implements ApplicationRunner {
         .toList();
   }
 
-  private record EditionSeed(
-      BaseProduct baseProduct,
-      String designName,
-      String concept,
-      String imageUrl,
-      String color,
-      String size,
-      String description,
-      int stock,
-      int price) {}
 }

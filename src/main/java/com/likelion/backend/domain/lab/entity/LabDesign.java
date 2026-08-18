@@ -141,8 +141,33 @@ public class LabDesign extends BaseTimeEntity {
         this.likesCount = Math.max(likesCount, 0);
     }
 
+    public void syncGallerySeed(
+            BaseProduct baseProduct, String designName, String imageUrl, int likesCount) {
+        this.baseProduct = baseProduct;
+        this.designName = designName;
+        this.imageUrl = imageUrl;
+        this.likesCount = Math.max(likesCount, 0);
+    }
+
     public void updateImageUrl(String imageUrl) {
         this.imageUrl = imageUrl;
+    }
+
+    public void syncReadyEditionCatalog(
+            String imageUrl,
+            String concept,
+            String color,
+            String size,
+            Integer stock,
+            Integer price) {
+        this.imageUrl = imageUrl;
+        this.concept = concept;
+        this.color = color;
+        this.size = size;
+        this.stock = stock;
+        this.price = price;
+        this.description = null;
+        this.isSoldOut = stock == null || stock <= 0;
     }
 
     public void applyAddonRecommendations(

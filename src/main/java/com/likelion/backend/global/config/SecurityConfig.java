@@ -45,6 +45,8 @@ public class SecurityConfig {
                 "/*.jpg",
                 "/*.jpeg",
                 "/*.webp",
+                "/lab-editions/**",
+                "/lab-gallery/**",
                 "/swagger-ui/**",
                 "/swagger-ui.html",
                 "/v3/api-docs/**",

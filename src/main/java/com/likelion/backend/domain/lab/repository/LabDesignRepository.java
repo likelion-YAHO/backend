@@ -25,4 +25,7 @@ public interface LabDesignRepository extends JpaRepository<LabDesign, Long> {
             String designName, ProductionStatus status);
 
     boolean existsByUser_IdAndProductionStatus(Long userId, ProductionStatus status);
+
+    Optional<LabDesign> findFirstByUser_IdAndProductionStatus(
+            Long userId, ProductionStatus status);
 }
