@@ -141,6 +141,14 @@ public class LabDesign extends BaseTimeEntity {
         this.likesCount = Math.max(likesCount, 0);
     }
 
+    public void syncGallerySeed(
+            BaseProduct baseProduct, String designName, String imageUrl, int likesCount) {
+        this.baseProduct = baseProduct;
+        this.designName = designName;
+        this.imageUrl = imageUrl;
+        this.likesCount = Math.max(likesCount, 0);
+    }
+
     public void updateImageUrl(String imageUrl) {
         this.imageUrl = imageUrl;
     }

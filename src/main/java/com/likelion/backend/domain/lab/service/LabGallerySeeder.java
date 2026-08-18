@@ -24,12 +24,13 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class LabGallerySeeder implements ApplicationRunner {
 
+  /** 새 컷: src/main/resources/static/lab-gallery/{file} */
   private static final List<GallerySeed> SEEDS =
       List.of(
           new GallerySeed(
               "lab.gallery.skulikelion@local",
               "lab-gallery-skulikelion",
-              "SKUikelion",
+              "SKUlikelion",
               BaseProduct.ELLA_BOSTON_BAG,
               "Boho Boston",
               "/mcmlab_SKUlikelion.png",
@@ -37,7 +38,7 @@ public class LabGallerySeeder implements ApplicationRunner {
           new GallerySeed(
               "lab.gallery.babylon@local",
               "lab-gallery-babylon",
-              "Babylon",
+              "Babyllion",
               BaseProduct.STARK_SIDE_STUDS_BACKPACK,
               "Boho Backpack",
               "/mcmlab_Babylon.png",
@@ -46,18 +47,34 @@ public class LabGallerySeeder implements ApplicationRunner {
               "lab.gallery.sjftrack@local",
               "lab-gallery-sjftrack",
               "SJFTRACK",
-              BaseProduct.TRACY_SATCHEL,
-              "Suede Satchel",
+              BaseProduct.PINA_TAMBOURINE_BAG,
+              "Boho Tambourine",
               "/mcmlab_SJFTRACK.png",
-              88),
+              93),
           new GallerySeed(
               "lab.gallery.mcmupcycling@local",
               "lab-gallery-mcmupcycling",
               "MCMupcycling",
-              BaseProduct.PINA_TAMBOURINE_BAG,
-              "Mini Tambourine",
-              "/mcmlab_MCMupcycling.png",
-              71));
+              BaseProduct.TRACY_SATCHEL,
+              "Boho Satchel",
+              "/lab-gallery/mcmupcycling.png",
+              68),
+          new GallerySeed(
+              "lab.gallery.sdkflfl.shopper@local",
+              "lab-gallery-sdkflfl-shopper",
+              "sdkflfl",
+              BaseProduct.TONI_TOP_ZIP_SHOPPER,
+              "Boho Shopper",
+              "/lab-gallery/sdkflfl-shopper.png",
+              35),
+          new GallerySeed(
+              "lab.gallery.sdkflfl.satchel@local",
+              "lab-gallery-sdkflfl-satchel",
+              "sdkflfl",
+              BaseProduct.TRACY_SATCHEL,
+              "Western Satchel",
+              "/lab-gallery/sdkflfl-satchel.png",
+              21));
 
   private final LabDesignRepository labDesignRepository;
   private final LabMissionRepository labMissionRepository;
@@ -76,24 +93,33 @@ public class LabGallerySeeder implements ApplicationRunner {
     int created = 0;
     for (GallerySeed seed : SEEDS) {
       User creator = findOrCreateCreator(seed);
-      if (labDesignRepository.existsByUser_IdAndProductionStatus(
-          creator.getId(), ProductionStatus.VIRTUAL)) {
-        continue;
+      if (!seed.nickname().equals(creator.getNickname())) {
+        creator.updateNickname(seed.nickname());
       }
+
       LabDesign design =
-          LabDesign.builder()
-              .user(creator)
-              .mission(mission)
-              .baseProduct(seed.baseProduct())
-              .designName(seed.designName())
-              .concept("BOHO CHIC")
-              .aiPrompt("BOHO CHIC " + seed.baseProduct().getProductName())
-              .usedMaterials("Vintage Visetos, Suede, Pink Leather")
-              .imageUrl(seed.imageUrl())
-              .build();
-      design.initLikesCount(seed.likesCount());
-      labDesignRepository.save(design);
-      created++;
+          labDesignRepository
+              .findFirstByUser_IdAndProductionStatus(creator.getId(), ProductionStatus.VIRTUAL)
+              .orElse(null);
+      if (design == null) {
+        design =
+            LabDesign.builder()
+                .user(creator)
+                .mission(mission)
+                .baseProduct(seed.baseProduct())
+                .designName(seed.designName())
+                .concept("BOHO CHIC")
+                .aiPrompt("BOHO CHIC " + seed.baseProduct().getProductName())
+                .usedMaterials("Vintage Visetos, Suede, Pink Leather")
+                .imageUrl(seed.imageUrl())
+                .build();
+        design.initLikesCount(seed.likesCount());
+        labDesignRepository.save(design);
+        created++;
+      } else {
+        design.syncGallerySeed(
+            seed.baseProduct(), seed.designName(), seed.imageUrl(), seed.likesCount());
+      }
     }
 
     if (created > 0) {
