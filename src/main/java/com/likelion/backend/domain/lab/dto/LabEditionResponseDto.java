@@ -44,6 +44,9 @@ public class LabEditionResponseDto {
     @Schema(description = "온라인 남은 재고 수량", example = "2")
     private Integer stock;
 
+    @Schema(description = "컬러 칩 Hex 코드", example = "#E1C699")
+    private String colorHex;
+
     public LabEditionResponseDto(LabDesign design) {
         this.id = design.getId();
         this.designName = design.getDesignName();
