@@ -145,6 +145,23 @@ public class LabDesign extends BaseTimeEntity {
         this.imageUrl = imageUrl;
     }
 
+    public void syncReadyEditionCatalog(
+            String imageUrl,
+            String concept,
+            String color,
+            String size,
+            Integer stock,
+            Integer price) {
+        this.imageUrl = imageUrl;
+        this.concept = concept;
+        this.color = color;
+        this.size = size;
+        this.stock = stock;
+        this.price = price;
+        this.description = null;
+        this.isSoldOut = stock == null || stock <= 0;
+    }
+
     public void applyAddonRecommendations(
             Long charmId, String charmName, Long scarfId, String scarfName) {
         this.recommendedCharmId = charmId;

@@ -2,8 +2,11 @@ package com.likelion.backend.domain.lab.dto;
 
 import com.likelion.backend.domain.lab.entity.LabDesign;
 import com.likelion.backend.domain.lab.entity.ProductionStatus;
+import com.likelion.backend.domain.lab.service.LabEditionCatalog;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Getter;
+
+import java.util.List;
 
 @Getter
 public class LabEditionResponseDto {
@@ -17,8 +20,11 @@ public class LabEditionResponseDto {
     @Schema(description = "콘셉트/시즌명", example = "Summer Remix")
     private String concept;
 
-    @Schema(description = "이미지 URL", example = "https://...")
+    @Schema(description = "대표 이미지 URL", example = "/lab-editions/stark-side-studs-1.png")
     private String imageUrl;
+
+    @Schema(description = "제품 이미지 URL 목록(앞뒤양옆)", example = "[\"/lab-editions/stark-side-studs-1.png\"]")
+    private List<String> imageUrls;
 
     @Schema(description = "창작자 닉네임", example = "김사자")
     private String nickname;
@@ -52,6 +58,7 @@ public class LabEditionResponseDto {
         this.designName = design.getDesignName();
         this.concept = design.getConcept();
         this.imageUrl = design.getImageUrl();
+        this.imageUrls = LabEditionCatalog.imageUrlsForStored(design.getImageUrl());
         this.nickname = (design.getUser() != null) ? design.getUser().getNickname() : "알 수 없음";
         this.productionStatus = design.getProductionStatus();
         this.price = design.getPrice();

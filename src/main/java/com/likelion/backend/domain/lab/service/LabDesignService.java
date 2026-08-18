@@ -26,6 +26,7 @@ import com.likelion.backend.global.exception.GlobalErrorCode;
 import com.likelion.backend.global.storage.FileStorageService;
 import java.time.Duration;
 import java.util.Base64;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -315,6 +316,7 @@ public class LabDesignService {
         List<LabDesign> editions = labDesignRepository.findAllByProductionStatusNot(ProductionStatus.VIRTUAL);
 
         return editions.stream()
+                .sorted(Comparator.comparingInt(design -> LabEditionCatalog.sortIndex(design.getDesignName())))
                 .map(LabEditionResponseDto::new)
                 .collect(Collectors.toList());
     }
