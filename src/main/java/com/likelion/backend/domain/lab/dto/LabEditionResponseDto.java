@@ -60,5 +60,14 @@ public class LabEditionResponseDto {
         this.description = design.getDescription();
         this.stock = design.getStock();
         this.isSoldOut = (design.getStock() == null || design.getStock() <= 0);
+        this.colorHex = mapColorToHex(design.getColor());
+    }
+
+    private String mapColorToHex(String colorName) {
+        // 나중에 다른 색이 추가되면 case만 늘리기
+        if (colorName != null && colorName.trim().equalsIgnoreCase("Sand")) {
+            return "#FFF7E6";
+        }
+        return "#FFF7E6";
     }
 }
