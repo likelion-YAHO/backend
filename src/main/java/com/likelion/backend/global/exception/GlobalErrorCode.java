@@ -62,7 +62,8 @@ public enum GlobalErrorCode implements BaseErrorCode {
   LAB_MISSION_NOT_FOUND("L001", "현재 진행 중인 랩 미션이 없습니다.", HttpStatus.NOT_FOUND),
   LAB_DESIGN_NOT_FOUND("L002", "존재하지 않는 랩 디자인 출품작입니다.", HttpStatus.NOT_FOUND),
   AI_GENERATION_LIMIT_EXCEEDED("L003", "AI 시안 생성은 1회 커스텀 당 최대 3번까지만 가능합니다.", HttpStatus.BAD_REQUEST),
-  AI_GENERATION_FAILED("L004", "AI 이미지 생성 중 서버 오류가 발생했습니다.", HttpStatus.INTERNAL_SERVER_ERROR);
+  AI_GENERATION_FAILED("L004", "AI 이미지 생성 중 서버 오류가 발생했습니다.", HttpStatus.INTERNAL_SERVER_ERROR),
+  LAB_PREVIEW_SOURCE_INVALID("L005", "미리보기 원본 이미지가 유효하지 않습니다.", HttpStatus.BAD_REQUEST);
 
   private final String code;
   private final String message;

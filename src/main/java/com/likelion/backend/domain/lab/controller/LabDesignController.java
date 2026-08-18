@@ -1,6 +1,7 @@
 package com.likelion.backend.domain.lab.controller;
 
 import com.likelion.backend.domain.lab.dto.*;
+import com.likelion.backend.domain.lab.service.LabDesignPreviewService;
 import com.likelion.backend.domain.lab.service.LabDesignService;
 import com.likelion.backend.global.common.BaseResponse;
 import com.likelion.backend.global.security.SecurityUtils;
@@ -24,6 +25,7 @@ import java.util.List;
 public class LabDesignController {
 
     private final LabDesignService labDesignService;
+    private final LabDesignPreviewService labDesignPreviewService;
 
     @Operation(
             summary = "AI 디자인 시안 생성",
@@ -38,6 +40,24 @@ public class LabDesignController {
         return ResponseEntity.ok(
                 BaseResponse.success("AI 디자인 시안 생성에 성공했습니다.", response)
         );
+    }
+
+    @Operation(
+            summary = "커스텀 미리보기",
+            description =
+                    "generate 시안 + 포인트/메탈/추가상품 조합으로 미리보기 이미지를 생성합니다. "
+                            + "같은 조합은 DB 캐시를 재사용하며 cacheHit=true로 표시됩니다. ",
+            security = @SecurityRequirement(name = "bearerAuth"))
+    @PostMapping("/preview")
+    public ResponseEntity<BaseResponse<LabDesignPreviewResponse>> createDesignPreview(
+            @Valid @RequestBody LabDesignPreviewRequest request) {
+        SecurityUtils.getCurrentUserId();
+        LabDesignPreviewResponse response = labDesignPreviewService.createPreview(request);
+        String message =
+                response.isCacheHit()
+                        ? "캐시된 미리보기를 반환했습니다."
+                        : "미리보기 이미지 생성에 성공했습니다.";
+        return ResponseEntity.ok(BaseResponse.success(message, response));
     }
 
     @Operation(

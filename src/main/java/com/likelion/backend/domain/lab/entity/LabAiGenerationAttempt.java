@@ -49,6 +49,21 @@ public class LabAiGenerationAttempt extends BaseTimeEntity {
   @Column(name = "try_count", nullable = false)
   private int tryCount;
 
+  @Column(name = "last_image_url", length = 512)
+  private String lastImageUrl;
+
+  @Column(name = "recommended_charm_id")
+  private Long recommendedCharmId;
+
+  @Column(name = "recommended_charm_name", length = 100)
+  private String recommendedCharmName;
+
+  @Column(name = "recommended_scarf_id")
+  private Long recommendedScarfId;
+
+  @Column(name = "recommended_scarf_name", length = 100)
+  private String recommendedScarfName;
+
   @Builder
   public LabAiGenerationAttempt(User user, LabMission mission, BaseProduct baseProduct) {
     this.user = user;
@@ -59,5 +74,18 @@ public class LabAiGenerationAttempt extends BaseTimeEntity {
 
   public void incrementTryCount() {
     this.tryCount++;
+  }
+
+  public void recordGeneration(
+      String imageUrl,
+      Long charmId,
+      String charmName,
+      Long scarfId,
+      String scarfName) {
+    this.lastImageUrl = imageUrl;
+    this.recommendedCharmId = charmId;
+    this.recommendedCharmName = charmName;
+    this.recommendedScarfId = scarfId;
+    this.recommendedScarfName = scarfName;
   }
 }

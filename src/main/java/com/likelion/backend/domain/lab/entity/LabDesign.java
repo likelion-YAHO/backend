@@ -68,6 +68,18 @@ public class LabDesign extends BaseTimeEntity {
 
     private Long scarfOptionId;
 
+    @Column(name = "recommended_charm_id")
+    private Long recommendedCharmId;
+
+    @Column(name = "recommended_charm_name", length = 100)
+    private String recommendedCharmName;
+
+    @Column(name = "recommended_scarf_id")
+    private Long recommendedScarfId;
+
+    @Column(name = "recommended_scarf_name", length = 100)
+    private String recommendedScarfName;
+
     @Column(nullable = false)
     private Boolean isSoldOut = false; // 품절 여부 기본값 false
 
@@ -88,6 +100,8 @@ public class LabDesign extends BaseTimeEntity {
                      String designName, String concept, String aiPrompt,
                      String usedMaterials, String imageUrl,
                      String pointColor, String metalColor, Long charmOptionId, Long scarfOptionId,
+                     Long recommendedCharmId, String recommendedCharmName,
+                     Long recommendedScarfId, String recommendedScarfName,
                      String color, String size, String description, Integer stock) {
 
         this.user = user;
@@ -102,6 +116,10 @@ public class LabDesign extends BaseTimeEntity {
         this.metalColor = metalColor;
         this.charmOptionId = charmOptionId;
         this.scarfOptionId = scarfOptionId;
+        this.recommendedCharmId = recommendedCharmId;
+        this.recommendedCharmName = recommendedCharmName;
+        this.recommendedScarfId = recommendedScarfId;
+        this.recommendedScarfName = recommendedScarfName;
         this.likesCount = 0;
         this.isOfficialSelection = false;
         this.productionStatus = ProductionStatus.VIRTUAL;
@@ -125,6 +143,14 @@ public class LabDesign extends BaseTimeEntity {
 
     public void updateImageUrl(String imageUrl) {
         this.imageUrl = imageUrl;
+    }
+
+    public void applyAddonRecommendations(
+            Long charmId, String charmName, Long scarfId, String scarfName) {
+        this.recommendedCharmId = charmId;
+        this.recommendedCharmName = charmName;
+        this.recommendedScarfId = scarfId;
+        this.recommendedScarfName = scarfName;
     }
 
     // 좋아요 증가

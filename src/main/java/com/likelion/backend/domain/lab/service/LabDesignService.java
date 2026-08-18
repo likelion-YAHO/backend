@@ -1,5 +1,7 @@
 package com.likelion.backend.domain.lab.service;
 
+import com.likelion.backend.domain.catalog.entity.AddOnProduct;
+import com.likelion.backend.domain.catalog.repository.AddOnProductRepository;
 import com.likelion.backend.domain.lab.dto.AiDesignRequestDto;
 import com.likelion.backend.domain.lab.dto.AiDesignResponseDto;
 import com.likelion.backend.domain.lab.dto.LabDesignCreateRequestDto;
@@ -56,6 +58,8 @@ public class LabDesignService {
     private final UserRepository userRepository;
     private final LabDesignLikeRepository labDesignLikeRepository;
     private final LabAiGenerationAttemptRepository labAiGenerationAttemptRepository;
+    private final AddOnProductRepository addOnProductRepository;
+    private final LabAddonRecommender labAddonRecommender;
     private final FileStorageService fileStorageService;
     private final AiProperties aiProperties;
 
@@ -89,25 +93,26 @@ public class LabDesignService {
             throw new CustomException(GlobalErrorCode.AI_GENERATION_LIMIT_EXCEEDED);
         }
 
-        // 2. 진짜 AI 호출 로직
         String imageUrl = generateAndStoreImage(request.getBaseProduct(), request.getPrompt());
         attempt.incrementTryCount();
 
-        // TODO: 추후 Lab 전용 AI 추천 로직 추가 시, 아래 하드코딩된 추천 참/스카프 ID 및 이름을 실제 DB 또는 AI 응답 값으로 연동 필요!
-        Long recommendedCharmId = 3L; // 실제 DB에 존재하는 참 ID
-        String recommendedCharmName = "베어 키링";
-        Long recommendedScarfId = 5L; // 실제 DB에 존재하는 스카프 ID
-        String recommendedScarfName = "레드 모노그램 스카프";
+        LabAddonRecommendation recommendation =
+                labAddonRecommender.recommend(
+                        request.getBaseProduct(), request.getPrompt(), mission);
+        attempt.recordGeneration(
+                imageUrl,
+                recommendation.getRecommendedCharmId(),
+                recommendation.getRecommendedCharmName(),
+                recommendation.getRecommendedScarfId(),
+                recommendation.getRecommendedScarfName());
 
         return new AiDesignResponseDto(
                 imageUrl,
                 attempt.getTryCount(),
-                recommendedCharmId,
-                recommendedCharmName,
-                recommendedScarfId,
-                recommendedScarfName,
-                List.of() // designOptions (랩 플로우에서는 사용하지 않으므로 빈 리스트 전달)
-        );
+                recommendation.getRecommendedCharmId(),
+                recommendation.getRecommendedCharmName(),
+                recommendation.getRecommendedScarfId(),
+                recommendation.getRecommendedScarfName());
     }
 
     @Transactional
@@ -118,6 +123,7 @@ public class LabDesignService {
         LabMission mission = labMissionRepository.findById(request.getMissionId())
                 .orElseThrow(() -> new CustomException(GlobalErrorCode.LAB_MISSION_NOT_FOUND));
 
+        String imageUrl = resolveSubmitImageUrl(request);
         LabDesign labDesign = LabDesign.builder()
                 .user(user)
                 .mission(mission)
@@ -126,19 +132,40 @@ public class LabDesignService {
                 .concept(request.getConcept())
                 .aiPrompt(request.getAiPrompt())
                 .usedMaterials(request.getUsedMaterials())
-                .imageUrl(request.getImageUrl())
+                .imageUrl(imageUrl)
                 .pointColor(request.getPointColor())
                 .metalColor(request.getMetalColor())
                 .charmOptionId(request.getCharmOptionId())
                 .scarfOptionId(request.getScarfOptionId())
                 .build();
 
-        LabDesign savedDesign = labDesignRepository.save(labDesign);
         if (request.getBaseProduct() != null) {
+            labAiGenerationAttemptRepository
+                    .findByUser_IdAndMission_IdAndBaseProduct(
+                            userId, mission.getId(), request.getBaseProduct())
+                    .ifPresent(
+                            attempt ->
+                                    labDesign.applyAddonRecommendations(
+                                            attempt.getRecommendedCharmId(),
+                                            attempt.getRecommendedCharmName(),
+                                            attempt.getRecommendedScarfId(),
+                                            attempt.getRecommendedScarfName()));
             labAiGenerationAttemptRepository.deleteByUser_IdAndMission_IdAndBaseProduct(
                     userId, mission.getId(), request.getBaseProduct());
         }
+
+        LabDesign savedDesign = labDesignRepository.save(labDesign);
         return new LabDesignResponseDto(savedDesign);
+    }
+
+    private String resolveSubmitImageUrl(LabDesignCreateRequestDto request) {
+        if (StringUtils.hasText(request.getPreviewImageUrl())) {
+            if (!LabDesignImageUrls.isLabManagedImage(request.getPreviewImageUrl())) {
+                throw new CustomException(GlobalErrorCode.LAB_PREVIEW_SOURCE_INVALID);
+            }
+            return request.getPreviewImageUrl().trim();
+        }
+        return request.getImageUrl();
     }
 
     private String generateAndStoreImage(BaseProduct baseProduct, String prompt) {
@@ -249,7 +276,17 @@ public class LabDesignService {
         LabDesign design = labDesignRepository.findById(designId)
                 .orElseThrow(() -> new CustomException(GlobalErrorCode.LAB_DESIGN_NOT_FOUND));
 
-        return new LabDesignDetailResponseDto(design);
+        return new LabDesignDetailResponseDto(
+                design,
+                resolveAddOnName(design.getCharmOptionId()),
+                resolveAddOnName(design.getScarfOptionId()));
+    }
+
+    private String resolveAddOnName(Long addOnId) {
+        if (addOnId == null) {
+            return null;
+        }
+        return addOnProductRepository.findById(addOnId).map(AddOnProduct::getName).orElse(null);
     }
 
     @Transactional
