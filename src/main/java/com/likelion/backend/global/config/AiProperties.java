@@ -27,7 +27,7 @@ public class AiProperties {
   private boolean designImageEnabled = true;
 
   /** 시안 이미지 모델 */
-  private String imageModel = "gpt-image-1.5";
+  private String imageModel = "gpt-image-1-mini";
 
   /** low | medium | high | auto */
   private String imageQuality = "low";
