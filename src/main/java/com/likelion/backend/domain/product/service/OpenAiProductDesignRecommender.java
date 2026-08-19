@@ -10,15 +10,21 @@ import com.likelion.backend.global.exception.CustomException;
 import com.likelion.backend.global.exception.GlobalErrorCode;
 import com.likelion.backend.global.storage.FileStorageService;
 import com.likelion.backend.global.storage.StoredFile;
+import jakarta.annotation.PreDestroy;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.HttpHeaders;
@@ -38,13 +44,11 @@ import tools.jackson.databind.json.JsonMapper;
  */
 @Slf4j
 @Component
-@RequiredArgsConstructor
 @ConditionalOnProperty(name = "app.ai.enabled", havingValue = "true", matchIfMissing = true)
 public class OpenAiProductDesignRecommender implements ProductDesignRecommender {
 
   private static final int MAX_IMAGES_FOR_AI = 3;
-  /** 시안 개수 : 현재는 2 -> 추후 4개로 올리기 */
-  private static final int DESIGN_OPTION_COUNT = 2;
+  private static final int DESIGN_OPTION_COUNT = 4;
   private static final int MIN_OPTIONS = DESIGN_OPTION_COUNT;
   private static final int MAX_OPTIONS = DESIGN_OPTION_COUNT;
   private static final String DESIGN_IMAGE_DIR = "designs";
@@ -97,6 +101,45 @@ public class OpenAiProductDesignRecommender implements ProductDesignRecommender 
   private final JsonMapper jsonMapper;
   private final FileStorageService fileStorageService;
   private final AddOnProductRepository addOnProductRepository;
+  private final RestClient chatClient;
+  private final RestClient imageClient;
+  private final ExecutorService imageGenExecutor;
+
+  public OpenAiProductDesignRecommender(
+      AiProperties aiProperties,
+      JsonMapper jsonMapper,
+      FileStorageService fileStorageService,
+      AddOnProductRepository addOnProductRepository) {
+    this.aiProperties = aiProperties;
+    this.jsonMapper = jsonMapper;
+    this.fileStorageService = fileStorageService;
+    this.addOnProductRepository = addOnProductRepository;
+    this.chatClient = buildRestClient(aiProperties.getTimeoutMs());
+    this.imageClient = buildRestClient(aiProperties.getImageTimeoutMs());
+    AtomicInteger threadIndex = new AtomicInteger();
+    this.imageGenExecutor =
+        Executors.newFixedThreadPool(
+            DESIGN_OPTION_COUNT,
+            runnable -> {
+              Thread thread =
+                  new Thread(runnable, "design-image-" + threadIndex.incrementAndGet());
+              thread.setDaemon(true);
+              return thread;
+            });
+  }
+
+  @PreDestroy
+  void shutdownImageGenExecutor() {
+    imageGenExecutor.shutdown();
+    try {
+      if (!imageGenExecutor.awaitTermination(5, TimeUnit.SECONDS)) {
+        imageGenExecutor.shutdownNow();
+      }
+    } catch (InterruptedException e) {
+      imageGenExecutor.shutdownNow();
+      Thread.currentThread().interrupt();
+    }
+  }
 
   @Override
   public DesignRecommendResult recommend(
@@ -119,7 +162,7 @@ public class OpenAiProductDesignRecommender implements ProductDesignRecommender 
       Map<String, Object> requestBody =
           buildChatRequestBody(product, images, userPrompt, keyrings, scarves);
       String rawResponse =
-          buildRestClient(aiProperties.getTimeoutMs())
+          chatClient
               .post()
               .uri("/chat/completions")
               .body(requestBody)
@@ -129,25 +172,8 @@ public class OpenAiProductDesignRecommender implements ProductDesignRecommender 
       ParsedChatResult parsed = parseChatResult(rawResponse, keyrings, scarves);
       String sourceImageUrl = images.get(0).getImageUrl();
       StoredFile sourceImage = fileStorageService.readByUrl(sourceImageUrl);
-
-      List<DesignRecommendation> withImages = new ArrayList<>();
-      for (DesignRecommendation design : parsed.designs()) {
-        String imageUrl = sourceImageUrl;
-        if (aiProperties.isDesignImageEnabled()) {
-          try {
-            imageUrl = generateAndStoreDesignImage(design, product, sourceImage, userPrompt);
-          } catch (Exception e) {
-            log.warn("시안 이미지 생성 실패, 제품 원본 이미지로 폴백. name={}", design.getName(), e);
-          }
-        }
-        withImages.add(
-            DesignRecommendation.builder()
-                .name(design.getName())
-                .description(design.getDescription())
-                .imagePrompt(design.getImagePrompt())
-                .imageUrl(imageUrl)
-                .build());
-      }
+      List<DesignRecommendation> withImages =
+          attachDesignImages(parsed.designs(), product, sourceImageUrl, sourceImage, userPrompt);
 
       return DesignRecommendResult.builder()
           .designs(withImages)
@@ -158,6 +184,8 @@ public class OpenAiProductDesignRecommender implements ProductDesignRecommender 
           .build();
     } catch (CustomException e) {
       throw e;
+    } catch (CompletionException e) {
+      throw unwrapCompletion(e);
     } catch (RestClientException e) {
       log.error("OpenAI 시안 추천 API 호출 실패", e);
       throw new CustomException(GlobalErrorCode.AI_DESIGN_FAILED);
@@ -167,20 +195,72 @@ public class OpenAiProductDesignRecommender implements ProductDesignRecommender 
     }
   }
 
-  private String generateAndStoreDesignImage(
-      DesignRecommendation design,
+  private List<DesignRecommendation> attachDesignImages(
+      List<DesignRecommendation> designs,
       Product product,
+      String sourceImageUrl,
       StoredFile sourceImage,
       String userPrompt) {
-    String prompt = buildImageEditPrompt(design, product, userPrompt);
-    String dataUrl =
+    if (!aiProperties.isDesignImageEnabled()) {
+      return designs.stream()
+          .map(design -> withImageUrl(design, sourceImageUrl))
+          .toList();
+    }
+
+    String sourceDataUrl =
         "data:"
             + sourceImage.getContentType()
             + ";base64,"
             + Base64.getEncoder().encodeToString(sourceImage.getBytes());
 
+    List<CompletableFuture<DesignRecommendation>> jobs = new ArrayList<>();
+    for (DesignRecommendation design : designs) {
+      jobs.add(
+          CompletableFuture.supplyAsync(
+              () -> generateOneDesignImage(design, product, sourceDataUrl, userPrompt),
+              imageGenExecutor));
+    }
+    return jobs.stream().map(CompletableFuture::join).toList();
+  }
+
+  private DesignRecommendation generateOneDesignImage(
+      DesignRecommendation design, Product product, String sourceDataUrl, String userPrompt) {
+    try {
+      String imageUrl = generateAndStoreDesignImage(design, product, sourceDataUrl, userPrompt);
+      return withImageUrl(design, imageUrl);
+    } catch (CustomException e) {
+      log.error("시안 이미지 생성 실패. name={}", design.getName(), e);
+      throw e;
+    } catch (Exception e) {
+      log.error("시안 이미지 생성 실패. name={}", design.getName(), e);
+      throw new CustomException(GlobalErrorCode.AI_DESIGN_FAILED);
+    }
+  }
+
+  private RuntimeException unwrapCompletion(CompletionException e) {
+    Throwable cause = e.getCause() != null ? e.getCause() : e;
+    if (cause instanceof CustomException customException) {
+      return customException;
+    }
+    log.error("OpenAI 시안 추천 처리 실패", cause);
+    return new CustomException(GlobalErrorCode.AI_DESIGN_FAILED);
+  }
+
+  private static DesignRecommendation withImageUrl(DesignRecommendation design, String imageUrl) {
+    return DesignRecommendation.builder()
+        .name(design.getName())
+        .description(design.getDescription())
+        .imagePrompt(design.getImagePrompt())
+        .imageUrl(imageUrl)
+        .build();
+  }
+
+  private String generateAndStoreDesignImage(
+      DesignRecommendation design, Product product, String sourceDataUrl, String userPrompt) {
+    String prompt = buildImageEditPrompt(design, product, userPrompt);
+
     Map<String, Object> imageRef = new LinkedHashMap<>();
-    imageRef.put("image_url", dataUrl);
+    imageRef.put("image_url", sourceDataUrl);
 
     Map<String, Object> body = new LinkedHashMap<>();
     body.put("model", aiProperties.getImageModel());
@@ -192,7 +272,7 @@ public class OpenAiProductDesignRecommender implements ProductDesignRecommender 
     body.put("output_format", "png");
 
     String rawResponse =
-        buildRestClient(aiProperties.getImageTimeoutMs())
+        imageClient
             .post()
             .uri("/images/edits")
             .body(body)
