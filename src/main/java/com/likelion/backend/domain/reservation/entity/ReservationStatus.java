@@ -11,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum ReservationStatus {
   RECEIVED("접수 완료"),
+  CONSULTING("상담 진행"),
   ARRIVED_AT_HQ("본사 도착"),
   INSPECTING("제품 검수"),
   IN_PROGRESS("제작 진행"),
