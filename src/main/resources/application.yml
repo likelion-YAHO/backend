@@ -45,7 +45,7 @@ app:
     timeout-ms: ${OPENAI_TIMEOUT_MS:60000}
     # 시안 이미지 생성 (Images edits API)
     design-image-enabled: ${OPENAI_DESIGN_IMAGE_ENABLED:true}
-    image-model: ${OPENAI_IMAGE_MODEL:gpt-image-1-mini}
+    image-model: ${OPENAI_IMAGE_MODEL:gpt-image-1.5}
     image-quality: ${OPENAI_IMAGE_QUALITY:low}
     image-size: ${OPENAI_IMAGE_SIZE:1024x1024}
     image-timeout-ms: ${OPENAI_IMAGE_TIMEOUT_MS:120000}
