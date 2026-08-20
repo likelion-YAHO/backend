@@ -19,11 +19,10 @@ public class ReservationScheduler {
 
     private final ReservationRepository reservationRepository;
 
-    // 60000ms = 1분마다 실행
     @Scheduled(fixedRate = 60000)
     @Transactional
     public void autoAdvanceReservationStatus() {
-        log.info("⏰ 1분 스케줄러 작동: 예약 상태를 다음 단계로 자동 업데이트합니다.");
+        log.info("⏰ 1분 스케줄러 작동: 예약 상태를 자동 업데이트합니다.");
 
         List<Reservation> reservations = reservationRepository.findAll();
         LocalDateTime now = LocalDateTime.now();
@@ -31,13 +30,19 @@ public class ReservationScheduler {
         for (Reservation reservation : reservations) {
             ReservationStatus current = reservation.getStatus();
 
-            // 이미 매장에 도착했거나 취소된 예약은 업데이트 제외
-            if (current == ReservationStatus.ARRIVED_AT_STORE || current == ReservationStatus.CANCELLED) {
+            if (current == ReservationStatus.ARRIVED_AT_STORE ||
+                    current == ReservationStatus.PICKED_UP ||
+                    current == ReservationStatus.CANCELLED) {
+                continue;
+            }
+
+            if (current == ReservationStatus.RECEIVED && now.isBefore(reservation.getVisitDate())) {
                 continue;
             }
 
             ReservationStatus nextStatus = switch (current) {
-                case RECEIVED -> ReservationStatus.ARRIVED_AT_HQ;
+                case RECEIVED -> ReservationStatus.CONSULTING;
+                case CONSULTING -> ReservationStatus.ARRIVED_AT_HQ;
                 case ARRIVED_AT_HQ -> ReservationStatus.INSPECTING;
                 case INSPECTING -> ReservationStatus.IN_PROGRESS;
                 case IN_PROGRESS -> ReservationStatus.COMPLETED;
@@ -46,7 +51,6 @@ public class ReservationScheduler {
                 default -> current;
             };
 
-            // 상태 및 시간 업데이트
             reservation.advanceStatus(nextStatus, now);
             log.info("예약 [{}] 상태 변경: {} -> {}", reservation.getId(), current.getLabel(), nextStatus.getLabel());
         }
