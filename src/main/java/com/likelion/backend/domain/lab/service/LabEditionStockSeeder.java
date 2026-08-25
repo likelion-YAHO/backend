@@ -14,6 +14,8 @@ import com.likelion.backend.domain.user.entity.User;
 import com.likelion.backend.domain.user.repository.UserRepository;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.ApplicationArguments;
@@ -30,11 +32,21 @@ public class LabEditionStockSeeder implements ApplicationRunner {
 
   private static final String SEED_EMAIL = "lab.edition.seed@local";
   private static final Map<String, Integer> STOCK_BY_STORE_NAME =
-      Map.of(
-          "MCM 롯데백화점 본점", 2,
-          "MCM 신세계면세점 본점", 3,
-          "MCM 롯데면세점 명동본점", 0,
-          "MCM KUNSTHALLE", 0);
+      Map.ofEntries(
+          Map.entry("MCM 롯데백화점 본점", 2),
+          Map.entry("MCM 신세계면세점 본점", 3),
+          Map.entry("MCM 롯데면세점 명동본점", 0),
+          Map.entry("MCM KUNSTHALLE", 0),
+          Map.entry("MCM 현대백화점 무역센터점", 4),
+          Map.entry("MCM 현대백화점면세점 무역센터점", 2),
+          Map.entry("MCM 스타필드 코엑스몰", 3),
+          Map.entry("MCM 파르나스몰", 1),
+          Map.entry("MCM HAUS", 2),
+          Map.entry("MCM 갤러리아 명품관", 1),
+          Map.entry("MCM 현대백화점 압구정본점", 1),
+          Map.entry("MCM 롯데백화점 잠실점", 2),
+          Map.entry("MCM 롯데백화점 강남점", 1),
+          Map.entry("MCM 롯데월드몰", 0));
 
   private final StoreStockRepository storeStockRepository;
   private final StoreRepository storeRepository;
@@ -81,9 +93,10 @@ public class LabEditionStockSeeder implements ApplicationRunner {
             seed.price());
       }
 
-      if (!storeStockRepository.existsByLabDesignId(edition.getId())) {
-        storeStockRepository.saveAll(buildStocks(stores, edition));
-        createdStocks += stores.size();
+      List<StoreStock> missingStocks = buildMissingStocks(stores, edition);
+      if (!missingStocks.isEmpty()) {
+        storeStockRepository.saveAll(missingStocks);
+        createdStocks += missingStocks.size();
       }
     }
 
@@ -125,8 +138,13 @@ public class LabEditionStockSeeder implements ApplicationRunner {
     return labDesignRepository.save(design);
   }
 
-  private List<StoreStock> buildStocks(List<Store> stores, LabDesign edition) {
+  private List<StoreStock> buildMissingStocks(List<Store> stores, LabDesign edition) {
+    Set<Long> existingStoreIds =
+        storeStockRepository.findAllByLabDesignId(edition.getId()).stream()
+            .map(stock -> stock.getStore().getId())
+            .collect(Collectors.toSet());
     return stores.stream()
+        .filter(store -> !existingStoreIds.contains(store.getId()))
         .map(
             store ->
                 StoreStock.builder()
