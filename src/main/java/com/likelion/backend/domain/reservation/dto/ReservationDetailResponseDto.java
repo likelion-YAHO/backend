@@ -21,6 +21,7 @@ public class ReservationDetailResponseDto {
     private String productImageUrl;
 
     private LocalDateTime receivedAt;
+    private LocalDateTime consultingAt;
     private LocalDateTime hqArrivedAt;
     private LocalDateTime inspectingAt;
     private LocalDateTime inProgressAt;
@@ -43,6 +44,7 @@ public class ReservationDetailResponseDto {
                 .storeId(reservation.getStore().getId())
                 .productImageUrl(reservation.getReform().getPreviewImageUrl())
                 .receivedAt(reservation.getReceivedAt())
+                .consultingAt(reservation.getConsultingAt())
                 .hqArrivedAt(reservation.getHqArrivedAt())
                 .inspectingAt(reservation.getInspectingAt())
                 .inProgressAt(reservation.getInProgressAt())

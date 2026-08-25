@@ -70,6 +70,7 @@ public class Reservation extends BaseTimeEntity {
   }
 
   private LocalDateTime receivedAt;             // 접수 완료 시간
+  private LocalDateTime consultingAt;           // 상담 진행 시간
   private LocalDateTime hqArrivedAt;            // 본사 도착 시간
   private LocalDateTime inspectingAt;           // 제품 검수 시간
   private LocalDateTime inProgressAt;           // 제작 진행 시간
@@ -85,6 +86,7 @@ public class Reservation extends BaseTimeEntity {
   public void advanceStatus(ReservationStatus nextStatus, LocalDateTime now) {
     this.status = nextStatus;
     switch (nextStatus) {
+      case CONSULTING -> this.consultingAt = now;
       case ARRIVED_AT_HQ -> this.hqArrivedAt = now;
       case INSPECTING -> this.inspectingAt = now;
       case IN_PROGRESS -> this.inProgressAt = now;
